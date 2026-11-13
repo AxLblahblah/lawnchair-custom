@@ -131,55 +131,29 @@ index 0000000..7fb48fb
 +    }
 +}
 diff --git a/lawnchair/src/app/lawnchair/smartspace/model/SmartspaceMode.kt b/lawnchair/src/app/lawnchair/smartspace/model/SmartspaceMode.kt
-new file mode 100644
-index 0000000..9b8e5c4
---- /dev/null
+index 3de6b17..6d4741e 100644
+--- a/lawnchair/src/app/lawnchair/smartspace/model/SmartspaceMode.kt
 +++ b/lawnchair/src/app/lawnchair/smartspace/model/SmartspaceMode.kt
-@@ -0,0 +1,56 @@
-+package app.lawnchair.smartspace.model
-+
-+import android.content.Context
-+import androidx.annotation.LayoutRes
-+import androidx.annotation.StringRes
-+import app.lawnchair.util.isPackageInstalledAndEnabled
-+import com.android.launcher3.R
-+
-+
-+sealed class SmartspaceMode(
-+    @StringRes val nameResourceId: Int,
-+    @LayoutRes val layoutResourceId: Int,
-+) {
-+    companion object {
-+        fun fromString(value: String): SmartspaceMode = when (value) {
-+            "google" -> GoogleSmartspace
-+            "google_search" -> GoogleSearchSmartspace
+@@ -15,6 +15,7 @@ sealed class SmartspaceMode(
+         fun fromString(value: String): SmartspaceMode = when (value) {
+             "google" -> GoogleSmartspace
+             "google_search" -> GoogleSearchSmartspace
 +            "search_bar" -> SearchBarSmartspace
-+            else -> LawnchairSmartspace
-+        }
-+
-+        /**
-+         * @return The list of all time format options.
-+         */
-+        fun values() = listOf(
-+            LawnchairSmartspace,
+             else -> LawnchairSmartspace
+         }
+ 
+@@ -23,6 +24,7 @@ sealed class SmartspaceMode(
+          */
+         fun values() = listOf(
+             LawnchairSmartspace,
 +            SearchBarSmartspace,
-+            GoogleSmartspace,
-+            GoogleSearchSmartspace,
-+        )
-+    }
-+
-+    abstract fun isAvailable(context: Context): Boolean
-+}
-+
-+
-+object LawnchairSmartspace : SmartspaceMode(
-+    nameResourceId = R.string.smartspace_mode_lawnchair,
-+    layoutResourceId = R.layout.smartspace_container,
-+) {
-+    override fun toString() = "lawnchair"
-+    override fun isAvailable(context: Context): Boolean = true
-+}
-+
+             GoogleSmartspace,
+             GoogleSearchSmartspace,
+         )
+@@ -39,6 +41,15 @@ object LawnchairSmartspace : SmartspaceMode(
+     override fun isAvailable(context: Context): Boolean = true
+ }
+ 
 +object SearchBarSmartspace : SmartspaceMode(
 +    nameResourceId = R.string.smartspace_mode_search_bar,
 +    layoutResourceId = R.layout.search_container_workspace,
@@ -189,25 +163,9 @@ index 0000000..9b8e5c4
 +    override fun isAvailable(context: Context): Boolean = true
 +}
 +
-+object GoogleSearchSmartspace : SmartspaceMode(
-+    nameResourceId = R.string.smartspace_mode_google_search,
-+    layoutResourceId = R.layout.search_container_workspace,
-+) {
-+    override fun toString(): String = "google_search"
-+
-+    override fun isAvailable(context: Context): Boolean =
-+        context.packageManager.isPackageInstalledAndEnabled("com.google.android.googlequicksearchbox")
-+}
-+
-+object GoogleSmartspace : SmartspaceMode(
-+    nameResourceId = R.string.smartspace_mode_google,
-+    layoutResourceId = R.layout.smartspace_legacy,
-+) {
-+    override fun toString(): String = "google"
-+
-+    override fun isAvailable(context: Context): Boolean =
-+        context.packageManager.isPackageInstalledAndEnabled("com.google.android.googlequicksearchbox")
-+}
+ object GoogleSearchSmartspace : SmartspaceMode(
+     nameResourceId = R.string.smartspace_mode_google_search,
+     layoutResourceId = R.layout.search_container_workspace,
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 index 2c194fb..d7dd80a 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
