@@ -1,0 +1,55 @@
+name: build
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch Lawnchair 12.1-dev and apply patch
+        run: |
+          git clone --depth 1 -b 12.1-dev https://github.com/LawnchairLauncher/lawnchair.git src
+          cd src
+          git submodule update --init --depth 1
+          git apply --whitespace=nowarn ../custom-build.patch
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Android SDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+      - name: Signing setup
+        env:
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.KEYSTORE_PASS }}
+        run: |
+          cd src
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > lawnchair.keystore
+            printf 'keyAlias=lawnchair\nkeyPassword=%s\nstoreFile=lawnchair.keystore\nstorePassword=%s\n' "$KEYSTORE_PASS" "$KEYSTORE_PASS" > keystore.properties
+          fi
+
+      - name: Build
+        working-directory: src
+        run: |
+          if [ -f keystore.properties ]; then
+            ./gradlew assembleLawnWithQuickstepRelease assembleLawnWithQuickstepDebug -x lint
+          else
+            ./gradlew assembleLawnWithQuickstepDebug -x lint
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lawnchair-apks
+          path: |
+            src/build/outputs/apk/lawnWithQuickstep/release/*.apk
+            src/build/outputs/apk/lawnWithQuickstep/debug/*.apk
