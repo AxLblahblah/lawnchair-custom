@@ -1,50 +1,87 @@
 diff --git a/build.gradle b/build.gradle
-index 34d0e05..7738027 100644
+index f3f9c1d..e9789ea 100644
 --- a/build.gradle
 +++ b/build.gradle
-@@ -172,8 +172,8 @@ android {
-         release {
-             resValue("string", "derived_app_name", "Lawnchair")
-             signingConfig releaseSigning
--            minifyEnabled true
--            shrinkResources true
-+            minifyEnabled false
-+            shrinkResources false
-             proguardFiles "proguard-android-optimize.txt", "proguard.pro"
-         }
-     }
+@@ -284,9 +284,9 @@ allprojects {
+ }
+ 
+ dependencies {
+-    implementation "androidx.dynamicanimation:dynamicanimation:${ANDROID_X_VERSION}"
+-    implementation "androidx.recyclerview:recyclerview:${ANDROID_X_VERSION}"
+-    implementation "androidx.preference:preference-ktx:${ANDROID_X_VERSION}"
++    implementation "androidx.dynamicanimation:dynamicanimation:1.0.0"
++    implementation "androidx.recyclerview:recyclerview:1.2.1"
++    implementation "androidx.preference:preference-ktx:1.2.0"
+     implementation project(':iconloaderlib')
+     implementation project(':searchuilib')
+     implementation fileTree(dir: "${FRAMEWORK_PREBUILTS_DIR}/libs", include: 'sysui_statslog.jar')
+@@ -306,7 +306,7 @@ dependencies {
+     androidTestImplementation 'com.android.support.test:runner:1.0.2'
+     androidTestImplementation 'com.android.support.test:rules:1.0.2'
+     androidTestImplementation 'com.android.support.test.uiautomator:uiautomator-v18:2.1.3'
+-    androidTestImplementation "androidx.annotation:annotation:${ANDROID_X_VERSION}"
++    androidTestImplementation "androidx.annotation:annotation:1.3.0"
+     implementation 'com.github.ChickenHook:RestrictionBypass:2.2'
+ 
+     implementation "androidx.compose.ui:ui:$compose_version"
+@@ -321,7 +321,7 @@ dependencies {
+     implementation "androidx.compose.runtime:runtime-rxjava2:$compose_version"
+     implementation "androidx.compose.compiler:compiler:$compose_version"
+     implementation "androidx.navigation:navigation-compose:2.4.1"
+-    implementation "androidx.palette:palette-ktx:${ANDROID_X_VERSION}"
++    implementation "androidx.palette:palette-ktx:1.0.0"
+     implementation "androidx.slice:slice-core:1.1.0-alpha02"
+     implementation "com.google.accompanist:accompanist-drawablepainter:$accompanist_version"
+     implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
+diff --git a/gradle.properties b/gradle.properties
+index 7e12249..2b1d256 100644
+--- a/gradle.properties
++++ b/gradle.properties
+@@ -2,7 +2,7 @@
+ android.useAndroidX = true
+ android.enableJetifier = true
+ 
+-ANDROID_X_VERSION=1+
++ANDROID_X_VERSION=1.7.0
+ 
+ GRADLE_CLASS_PATH=com.android.tools.build:gradle:4.0.0
+ 
 diff --git a/lawnchair/res/values/config.xml b/lawnchair/res/values/config.xml
-index 029f541..0c5b3a8 100644
+index 992164c..f7c728e 100644
 --- a/lawnchair/res/values/config.xml
 +++ b/lawnchair/res/values/config.xml
-@@ -85,7 +85,8 @@
-     <bool name="config_default_themed_hotseat_qsb">true</bool>
+@@ -42,6 +42,9 @@
+ 
+     <bool name="config_default_dark_status_bar">false</bool>
+     <bool name="config_default_dock_search_bar">true</bool>
++    <bool name="config_default_dock_disabled">true</bool>
++    <bool name="config_default_allow_widget_overlap">true</bool>
++    <bool name="config_default_force_resizable_widgets">true</bool>
+     <bool name="config_default_themed_hotseat_qsb">false</bool>
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
--    <bool name="config_default_allow_widget_overlap">false</bool>
-+    <bool name="config_default_allow_widget_overlap">true</bool>
-+    <bool name="config_default_dock_disabled">true</bool>
-     <bool name="config_default_show_status_bar">true</bool>
-     <bool name="config_default_show_top_shadow">true</bool>
-     <bool name="config_default_lock_home_screen">false</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 85a7b3f..faf3491 100644
+index 1d81cd7..c3a1135 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
-@@ -30,6 +30,7 @@
-     -->
-     <string name="what_to_show">What to Show</string>
+@@ -33,6 +33,11 @@
+     <string name="auto_add_shortcuts_label">Add New Apps to Home Screen</string>
      <string name="dock_label">Dock</string>
-+    <string name="disable_dock">Disable dock</string>
      <string name="dock_description">Search Bar, Icon Count</string>
++    <string name="disable_dock">Disable Dock</string>
++    <string name="workspace_padding">Workspace Padding</string>
++    <string name="workspace_padding_horizontal">Horizontal Padding</string>
++    <string name="workspace_padding_vertical">Vertical Padding</string>
++    <string name="force_resizable_widgets">Force Resizable Widgets</string>
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
+     <string name="folders_label">Folders</string>
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index faa6277..548b92c 100644
+index 6d6af7f..e25fbc7 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -83,6 +83,12 @@ class PreferenceManager2 private constructor(private val context: Context) : Pre
-         onSet = { reloadHelper.restart() },
+@@ -208,6 +208,36 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+         onSet = { reloadHelper.reloadGrid() },
      )
  
 +    val dockDisabled = preference(
@@ -53,47 +90,181 @@ index faa6277..548b92c 100644
 +        onSet = { reloadHelper.restart() },
 +    )
 +
-     val iconShape = preference(
-         key = stringPreferencesKey(name = "icon_shape"),
-         defaultValue = IconShape.fromString(value = context.getString(R.string.config_default_icon_shape), context = context) ?: IconShape.Circle,
++    val allowWidgetOverlap = preference(
++        key = booleanPreferencesKey(name = "allow_widget_overlap"),
++        defaultValue = context.resources.getBoolean(R.bool.config_default_allow_widget_overlap),
++        onSet = { reloadHelper.restart() },
++    )
++
++    val forceResizableWidgets = preference(
++        key = booleanPreferencesKey(name = "force_resizable_widgets"),
++        defaultValue = context.resources.getBoolean(R.bool.config_default_force_resizable_widgets),
++        onSet = { reloadHelper.restart() },
++    )
++
++    val workspacePaddingHorizontal = preference(
++        key = intPreferencesKey(name = "workspace_padding_horizontal"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val workspacePaddingVertical = preference(
++        key = intPreferencesKey(name = "workspace_padding_vertical"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
++    )
++
+     val enableFuzzySearch = preference(
+         key = booleanPreferencesKey(name = "enable_fuzzy_search"),
+         defaultValue = context.resources.getBoolean(R.bool.config_default_enable_fuzzy_search),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
-index 2c194fb..d7dd80a 100644
+index 703cc2f..72de5c9 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
-@@ -54,6 +54,12 @@ fun DockPreferences() {
+@@ -37,8 +37,13 @@ fun DockPreferences() {
      val prefs = preferenceManager()
      val prefs2 = preferenceManager2()
      PreferenceLayout(label = stringResource(id = R.string.dock_label)) {
-+        PreferenceGroup {
++        PreferenceGroup(isFirstChild = true) {
 +            SwitchPreference(
 +                adapter = prefs2.dockDisabled.getAdapter(),
 +                label = stringResource(id = R.string.disable_dock),
 +            )
 +        }
-         PreferenceGroup(heading = stringResource(id = R.string.search_bar_label)) {
-             DividerColumn {
-                 val hotseatModeAdapter = prefs2.hotseatMode.getAdapter()
+         PreferenceGroup(
+-            isFirstChild = true,
+             heading = stringResource(id = R.string.search_bar_label),
+         ) {
+             val hotseatQsbAdapter = prefs2.hotseatQsb.getAdapter()
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
+index 547a84f..b4df38b 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
+@@ -70,6 +70,20 @@ fun HomeScreenPreferences() {
+                 subtitle = stringResource(id = R.string.x_by_y, columns, rows),
+             )
+         }
++        PreferenceGroup(heading = stringResource(id = R.string.workspace_padding)) {
++            SliderPreference(
++                label = stringResource(id = R.string.workspace_padding_horizontal),
++                adapter = prefs2.workspacePaddingHorizontal.getAdapter(),
++                step = 1,
++                valueRange = -48..48,
++            )
++            SliderPreference(
++                label = stringResource(id = R.string.workspace_padding_vertical),
++                adapter = prefs2.workspacePaddingVertical.getAdapter(),
++                step = 1,
++                valueRange = -48..48,
++            )
++        }
+         PreferenceGroup(heading = stringResource(id = R.string.status_bar_label)) {
+             val showStatusBarAdapter = prefs2.showStatusBar.getAdapter()
+             SwitchPreference(
+@@ -131,8 +145,12 @@ fun HomeScreenPreferences() {
+                 )
+             }
+         }
+-        if (!Utilities.ATLEAST_S) {
+-            PreferenceGroup(heading = stringResource(id = R.string.widget_button_text)) {
++        PreferenceGroup(heading = stringResource(id = R.string.widget_button_text)) {
++            SwitchPreference(
++                adapter = prefs2.forceResizableWidgets.getAdapter(),
++                label = stringResource(id = R.string.force_resizable_widgets),
++            )
++            if (!Utilities.ATLEAST_S) {
+                 SwitchPreference(
+                     adapter = prefs2.roundedWidgets.getAdapter(),
+                     label = stringResource(id = R.string.force_rounded_widgets),
+diff --git a/src/com/android/launcher3/CellLayout.java b/src/com/android/launcher3/CellLayout.java
+index e24ee43..7264f53 100644
+--- a/src/com/android/launcher3/CellLayout.java
++++ b/src/com/android/launcher3/CellLayout.java
+@@ -58,6 +58,9 @@ import androidx.annotation.Nullable;
+ import androidx.core.graphics.ColorUtils;
+ import androidx.core.view.ViewCompat;
+ 
++import app.lawnchair.preferences2.PreferenceManager2;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
++
+ import com.android.launcher3.LauncherSettings.Favorites;
+ import com.android.launcher3.accessibility.DragAndDropAccessibilityDelegate;
+ import com.android.launcher3.anim.Interpolators;
+@@ -205,6 +208,8 @@ public class CellLayout extends ViewGroup {
+     // Related to accessible drag and drop
+     DragAndDropAccessibilityDelegate mTouchHelper;
+ 
++    private PreferenceManager2 mPreferenceManager2;
++
+ 
+     public static final FloatProperty<CellLayout> SPRING_LOADED_PROGRESS =
+             new FloatProperty<CellLayout>("spring_loaded_progress") {
+@@ -238,6 +243,7 @@ public class CellLayout extends ViewGroup {
+         setWillNotDraw(false);
+         setClipToPadding(false);
+         mActivity = ActivityContext.lookupContext(context);
++        mPreferenceManager2 = PreferenceManager2.getInstance(context);
+         DeviceProfile deviceProfile = mActivity.getDeviceProfile();
+ 
+         mBorderSpacing = mContainerType == FOLDER
+@@ -1795,6 +1801,12 @@ public class CellLayout extends ViewGroup {
+         // Return early if get invalid cell positions
+         if (cellX < 0 || cellY < 0) return false;
+ 
++        if (PreferenceExtensionsKt.firstBlocking(mPreferenceManager2.getAllowWidgetOverlap())) {
++            // let's pretend no intersections exist
++            solution.intersectingViews = new ArrayList<>(mIntersectingViews);
++            return true;
++        }
++
+         mIntersectingViews.clear();
+         mOccupiedRect.set(cellX, cellY, cellX + spanX, cellY + spanY);
+ 
+@@ -2634,7 +2646,7 @@ public class CellLayout extends ViewGroup {
+ 
+     public boolean isOccupied(int x, int y) {
+         if (x < mCountX && y < mCountY) {
+-            return mOccupied.cells[x][y];
++            return mOccupied.cells[x][y] && !PreferenceExtensionsKt.firstBlocking(mPreferenceManager2.getAllowWidgetOverlap());
+         } else {
+             throw new RuntimeException("Position exceeds the bound of this CellLayout");
+         }
+@@ -2900,6 +2912,6 @@ public class CellLayout extends ViewGroup {
+     }
+ 
+     public boolean isRegionVacant(int x, int y, int spanX, int spanY) {
+-        return mOccupied.isRegionVacant(x, y, spanX, spanY);
++        return mOccupied.isRegionVacant(x, y, spanX, spanY) || PreferenceExtensionsKt.firstBlocking(mPreferenceManager2.getAllowWidgetOverlap());
+     }
+ }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 5b44eae..5ec42d1 100644
+index 720f3d8..6d1e9d7 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -68,6 +68,7 @@ public class DeviceProfile {
- 
-     // Device properties
-     public final boolean isTablet;
-+    private final boolean mDockDisabled;
-     public final boolean isPhone;
-     public final boolean transposeLayoutWithOrientation;
+@@ -72,6 +72,10 @@ public class DeviceProfile {
      public final boolean isTwoPanels;
-@@ -239,6 +240,7 @@ public class DeviceProfile {
-             boolean useTwoPanels) {
-         mTextFactors = DeviceProfileOverrides.INSTANCE.get(context).getTextFactors();
+     public final boolean allowRotation;
+ 
++    private final boolean mDockDisabled;
++    private final int mExtraWorkspacePaddingHpx;
++    private final int mExtraWorkspacePaddingVpx;
++
+     // Device properties in current orientation
+     public final boolean isLandscape;
+     public final boolean isMultiWindowMode;
+@@ -226,6 +230,11 @@ public class DeviceProfile {
+ 
          PreferenceManager2 preferenceManager2 = PreferenceManager2.INSTANCE.get(context);
-+        mDockDisabled = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDockDisabled());
          allAppsCellHeightMultiplier = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerCellHeightFactor());
++        mDockDisabled = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDockDisabled());
++        mExtraWorkspacePaddingHpx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingHorizontal()));
++        mExtraWorkspacePaddingVpx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingVertical()));
  
          this.inv = inv;
-@@ -490,6 +492,13 @@ public class DeviceProfile {
+         this.isLandscape = windowBounds.isLandscape();
+@@ -436,6 +445,13 @@ public class DeviceProfile {
              // Recalculate the available dimensions using the new hotseat size.
              updateAvailableDimensions(res);
          }
@@ -107,7 +278,7 @@ index 5b44eae..5ec42d1 100644
          updateWorkspacePadding();
  
          flingToDeleteThresholdVelocity = res.getDimensionPixelSize(
-@@ -540,6 +549,10 @@ public class DeviceProfile {
+@@ -459,6 +475,10 @@ public class DeviceProfile {
                      + hotseatBarBottomPaddingPx + (isScalableGrid ? 0 : hotseatExtraVerticalSize)
                      + hotseatBarSizeExtraSpacePx;
          }
@@ -117,15 +288,26 @@ index 5b44eae..5ec42d1 100644
 +        }
      }
  
-     private Point getCellLayoutBorderSpace(InvariantDeviceProfile idp) {
+     private void setCellLayoutBorderSpacing(int borderSpacing) {
+@@ -813,6 +833,10 @@ public class DeviceProfile {
+                         paddingBottom);
+             }
+         }
++        padding.left += mExtraWorkspacePaddingHpx;
++        padding.right += mExtraWorkspacePaddingHpx;
++        padding.top += mExtraWorkspacePaddingVpx;
++        padding.bottom += mExtraWorkspacePaddingVpx;
+     }
+ 
+     public Rect getHotseatLayoutPadding() {
 diff --git a/src/com/android/launcher3/Hotseat.java b/src/com/android/launcher3/Hotseat.java
-index d99d761..3d37045 100644
+index d5c71af..e86773e 100644
 --- a/src/com/android/launcher3/Hotseat.java
 +++ b/src/com/android/launcher3/Hotseat.java
-@@ -82,6 +82,10 @@ public class Hotseat extends CellLayout implements Insettable {
-         mQsb = LayoutInflater.from(context).inflate(layoutId, this, false);
-         mQsbHeight = mQsb.getLayoutParams().height;
+@@ -76,6 +76,10 @@ public class Hotseat extends CellLayout implements Insettable {
          addView(mQsb);
+ 
+         mTaskbarViewHeight = context.getResources().getDimensionPixelSize(R.dimen.taskbar_size);
 +
 +        if (PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDockDisabled())) {
 +            setVisibility(GONE);
@@ -133,21 +315,74 @@ index d99d761..3d37045 100644
      }
  
      /**
+diff --git a/src/com/android/launcher3/model/LoaderCursor.java b/src/com/android/launcher3/model/LoaderCursor.java
+index 93f824f..0d001b5 100644
+--- a/src/com/android/launcher3/model/LoaderCursor.java
++++ b/src/com/android/launcher3/model/LoaderCursor.java
+@@ -49,6 +49,9 @@ import com.android.launcher3.icons.BitmapInfo;
+ import com.android.launcher3.icons.IconCache;
+ import com.android.launcher3.icons.LauncherIcons;
+ import com.android.launcher3.logging.FileLog;
++
++import app.lawnchair.preferences2.PreferenceManager2;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
+ import com.android.launcher3.model.data.AppInfo;
+ import com.android.launcher3.model.data.ItemInfo;
+ import com.android.launcher3.model.data.WorkspaceItemInfo;
+@@ -100,6 +103,8 @@ public class LoaderCursor extends CursorWrapper {
+     @Nullable
+     private LauncherActivityInfo mActivityInfo;
+ 
++    private final PreferenceManager2 preferenceManager2;
++
+     // Properties loaded per iteration
+     public long serialNumber;
+     public UserHandle user;
+@@ -118,6 +123,7 @@ public class LoaderCursor extends CursorWrapper {
+         mIconCache = app.getIconCache();
+         mIDP = app.getInvariantDeviceProfile();
+         mPM = mContext.getPackageManager();
++        preferenceManager2 = PreferenceManager2.getInstance(mContext);
+ 
+         // Init column indices
+         iconIndex = getColumnIndexOrThrow(LauncherSettings.Favorites.ICON);
+@@ -472,7 +478,8 @@ public class LoaderCursor extends CursorWrapper {
+         final GridOccupancy occupancy = occupied.get(item.screenId);
+ 
+         // Check if any workspace icons overlap with each other
+-        if (occupancy.isRegionVacant(item.cellX, item.cellY, item.spanX, item.spanY)) {
++        if (occupancy.isRegionVacant(item.cellX, item.cellY, item.spanX, item.spanY)
++                || PreferenceExtensionsKt.firstBlocking(preferenceManager2.getAllowWidgetOverlap())) {
+             occupancy.markCells(item, true);
+             return true;
+         } else {
 diff --git a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java b/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
-index bba1016..65281c4 100644
+index d77d99d..846a6ad 100644
 --- a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
 +++ b/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
-@@ -172,6 +172,13 @@ public class LauncherAppWidgetProviderInfo extends AppWidgetProviderInfo
+@@ -17,6 +17,9 @@ import com.android.launcher3.DeviceProfile;
+ import com.android.launcher3.InvariantDeviceProfile;
+ import com.android.launcher3.LauncherAppState;
+ import com.android.launcher3.Utilities;
++
++import app.lawnchair.preferences2.PreferenceManager2;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
+ import com.android.launcher3.icons.ComponentWithLabelAndIcon;
+ import com.android.launcher3.icons.IconCache;
+ import com.android.launcher3.model.data.LauncherAppWidgetInfo;
+@@ -172,6 +175,15 @@ public class LauncherAppWidgetProviderInfo extends AppWidgetProviderInfo
          // Ensures the default span X and span Y will not exceed the current grid size.
          this.spanX = Math.min(spanX, idp.numColumns);
          this.spanY = Math.min(spanY, idp.numRows);
-+        // Force every widget to be resizable, regardless of what its provider declares.
-+        this.resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL
-+                | AppWidgetProviderInfo.RESIZE_VERTICAL;
-+        this.minSpanX = 1;
-+        this.minSpanY = 1;
-+        this.maxSpanX = idp.numColumns;
-+        this.maxSpanY = idp.numRows;
++
++        if (PreferenceExtensionsKt.firstBlocking(
++                PreferenceManager2.getInstance(context).getForceResizableWidgets())) {
++            this.resizeMode = AppWidgetProviderInfo.RESIZE_HORIZONTAL | AppWidgetProviderInfo.RESIZE_VERTICAL;
++            this.minSpanX = 1;
++            this.minSpanY = 1;
++            this.maxSpanX = idp.numColumns;
++            this.maxSpanY = idp.numRows;
++        }
      }
  
      /**
