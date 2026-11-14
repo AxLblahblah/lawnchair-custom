@@ -1,8 +1,34 @@
 diff --git a/build.gradle b/build.gradle
-index 34d0e05..7738027 100644
+index 34d0e05..2878717 100644
 --- a/build.gradle
 +++ b/build.gradle
-@@ -172,8 +172,8 @@ android {
+@@ -108,12 +108,19 @@ android {
+         def copyArtifactList = tasks.register("copy${capitalizedName}ArtifactList", Copy) {
+             dependsOn tasks.named("licenseeAndroid${capitalizedName}")
+             from reporting.file("licensee/android${capitalizedName}/artifacts.json")
+             into layout.buildDirectory.dir("generated/dependencyAssets/")
+         }
+         tasks.named("merge${variant.name.capitalize()}Assets").configure {
+             dependsOn copyArtifactList
+         }
+ 
+         variant.outputs.configureEach {
+             outputFileName = "Lawnchair ${variant.versionName}.apk"
+         }
+     }
++
++    afterEvaluate {
++        def copyArtifactListTasks = tasks.withType(Copy).matching { it.name.endsWith("ArtifactList") }
++        tasks.matching { it.name.startsWith("merge") && it.name.endsWith("Assets") && it.name.contains("Lawn") }.configureEach {
++            dependsOn copyArtifactListTasks
++        }
++    }
+ 
+     buildFeatures {
+         aidl true
+         buildConfig true
+         compose true
+@@ -172,8 +179,8 @@ android {
          release {
              resValue("string", "derived_app_name", "Lawnchair")
              signingConfig releaseSigning
