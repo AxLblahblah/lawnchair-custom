@@ -62,24 +62,25 @@ index 7e12249..2b1d256 100644
  GRADLE_CLASS_PATH=com.android.tools.build:gradle:4.0.0
  
 diff --git a/lawnchair/res/values/config.xml b/lawnchair/res/values/config.xml
-index 992164c..f7c728e 100644
+index 992164c..e09ae92 100644
 --- a/lawnchair/res/values/config.xml
 +++ b/lawnchair/res/values/config.xml
-@@ -42,6 +42,9 @@
+@@ -42,6 +42,10 @@
  
      <bool name="config_default_dark_status_bar">false</bool>
      <bool name="config_default_dock_search_bar">true</bool>
 +    <bool name="config_default_dock_disabled">true</bool>
 +    <bool name="config_default_allow_widget_overlap">true</bool>
 +    <bool name="config_default_force_resizable_widgets">true</bool>
++    <bool name="config_default_disable_splash_screen">true</bool>
      <bool name="config_default_themed_hotseat_qsb">false</bool>
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..c3a1135 100644
+index 1d81cd7..449db9d 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
-@@ -33,6 +33,11 @@
+@@ -33,6 +33,14 @@
      <string name="auto_add_shortcuts_label">Add New Apps to Home Screen</string>
      <string name="dock_label">Dock</string>
      <string name="dock_description">Search Bar, Icon Count</string>
@@ -88,14 +89,17 @@ index 1d81cd7..c3a1135 100644
 +    <string name="workspace_padding_horizontal">Horizontal Padding</string>
 +    <string name="workspace_padding_vertical">Vertical Padding</string>
 +    <string name="force_resizable_widgets">Force Resizable Widgets</string>
++    <string name="drawer_padding">Drawer Padding</string>
++    <string name="recents_background_opacity">Recents Background Opacity</string>
++    <string name="disable_splash_screen">Disable Splash Screen</string>
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..e25fbc7 100644
+index 6d6af7f..3f03dca 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -208,6 +208,36 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +208,60 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -129,9 +133,116 @@ index 6d6af7f..e25fbc7 100644
 +        onSet = { reloadHelper.recreate() },
 +    )
 +
++    val drawerPaddingHorizontal = preference(
++        key = intPreferencesKey(name = "drawer_padding_horizontal"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val drawerPaddingVertical = preference(
++        key = intPreferencesKey(name = "drawer_padding_vertical"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val recentsBackgroundOpacity = preference(
++        key = floatPreferencesKey(name = "recents_background_opacity"),
++        defaultValue = 1f,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val disableSplashScreen = preference(
++        key = booleanPreferencesKey(name = "disable_splash_screen"),
++        defaultValue = context.resources.getBoolean(R.bool.config_default_disable_splash_screen),
++        onSet = { reloadHelper.recreate() },
++    )
++
      val enableFuzzySearch = preference(
          key = booleanPreferencesKey(name = "enable_fuzzy_search"),
          defaultValue = context.resources.getBoolean(R.bool.config_default_enable_fuzzy_search),
+diff --git a/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt b/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt
+index f77b29c..2d30e9f 100644
+--- a/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt
++++ b/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt
+@@ -1,4 +1,30 @@
+ package app.lawnchair.theme.color
+ 
++import android.content.Context
++import app.lawnchair.preferences2.PreferenceManager2
++import app.lawnchair.theme.UiColorMode
++import dev.kdrag0n.colorkt.Color
++import dev.kdrag0n.monet.theme.ColorScheme
++
+ fun ColorToken.setAlpha(alpha: Float) = SetAlphaColorToken(this, alpha)
+ fun ColorToken.setLStar(lStar: Double) = SetLStarColorToken(this, lStar)
++
++class WithContextColorToken(
++    private val token: ColorToken,
++    private val transform: ColorToken.(Context) -> ColorToken,
++) : ColorToken {
++
++    override fun resolve(context: Context, scheme: ColorScheme, uiColorMode: UiColorMode): Color {
++        return transform(token, context).resolve(context, scheme, uiColorMode)
++    }
++}
++
++fun ColorToken.withContext(transform: ColorToken.(Context) -> ColorToken) =
++    WithContextColorToken(this, transform)
++
++fun ColorToken.withPreferences(
++    transform: ColorToken.(PreferenceManager2) -> ColorToken,
++) = withContext { context ->
++    val prefs = PreferenceManager2.getInstance(context)
++    transform(this, prefs)
++}
+diff --git a/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt b/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt
+index dcb9334..6cc94ab 100644
+--- a/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt
++++ b/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt
+@@ -3,6 +3,7 @@ package app.lawnchair.theme.color
+ import androidx.compose.runtime.Composable
+ import androidx.compose.ui.graphics.Color
+ import androidx.compose.ui.platform.LocalContext
++import com.patrykmichalik.preferencemanager.firstBlocking
+ 
+ @Suppress("MemberVisibilityCanBePrivate", "unused")
+ object ColorTokens {
+@@ -60,6 +61,10 @@ object ColorTokens {
+     @JvmField val FocusHighlight = DayNightColorToken(Neutral1_0, Neutral1_700)
+     @JvmField val GroupHighlight = Surface
+     @JvmField val OverviewScrim = DayNightColorToken(Neutral2_500.setLStar(87.0), Neutral1_800)
++        .withPreferences { prefs ->
++            val opacity = prefs.recentsBackgroundOpacity.firstBlocking()
++            if (opacity < 1f) setAlpha(opacity) else this
++        }
+     @JvmField val SearchboxHighlight = DayNightColorToken(SurfaceVariantLight, Neutral1_800)
+ 
+     @JvmField val FolderDotColor = Accent2_50
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
+index 3820d3b..a1e31ce 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
+@@ -127,6 +127,20 @@ fun AppDrawerPreferences() {
+                 showAsPercentage = true
+             )
+         }
++        PreferenceGroup(heading = stringResource(id = R.string.drawer_padding)) {
++            SliderPreference(
++                label = stringResource(id = R.string.workspace_padding_horizontal),
++                adapter = prefs2.drawerPaddingHorizontal.getAdapter(),
++                step = 1,
++                valueRange = -48..48,
++            )
++            SliderPreference(
++                label = stringResource(id = R.string.workspace_padding_vertical),
++                adapter = prefs2.drawerPaddingVertical.getAdapter(),
++                step = 1,
++                valueRange = -48..48,
++            )
++        }
+         PreferenceGroup(heading = stringResource(id = R.string.icons)) {
+             SliderPreference(
+                 label = stringResource(id = R.string.icon_size),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 index 703cc2f..72de5c9 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
@@ -151,6 +262,21 @@ index 703cc2f..72de5c9 100644
              heading = stringResource(id = R.string.search_bar_label),
          ) {
              val hotseatQsbAdapter = prefs2.hotseatQsb.getAdapter()
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
+index f60565f..767b15a 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
+@@ -60,6 +60,10 @@ fun GeneralPreferences() {
+                 description = stringResource(id = R.string.home_screen_rotaton_description),
+             )
+             NotificationDotsPreference()
++            SwitchPreference(
++                adapter = prefs2.disableSplashScreen.getAdapter(),
++                label = stringResource(id = R.string.disable_splash_screen),
++            )
+             NavigationActionPreference(
+                 label = stringResource(id = R.string.icon_pack),
+                 destination = subRoute(name = GeneralRoutes.ICON_PACK),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 index 547a84f..b4df38b 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
@@ -191,6 +317,69 @@ index 547a84f..b4df38b 100644
                  SwitchPreference(
                      adapter = prefs2.roundedWidgets.getAdapter(),
                      label = stringResource(id = R.string.force_rounded_widgets),
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
+index 958111b..a3dcff5 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
+@@ -10,6 +10,7 @@ import androidx.navigation.NavGraphBuilder
+ import app.lawnchair.preferences.getAdapter
+ import app.lawnchair.preferences.observeAsState
+ import app.lawnchair.preferences.preferenceManager
++import app.lawnchair.preferences2.preferenceManager2
+ import app.lawnchair.ui.preferences.components.PreferenceGroup
+ import app.lawnchair.ui.preferences.components.PreferenceLayout
+ import app.lawnchair.ui.preferences.components.SliderPreference
+@@ -26,6 +27,7 @@ fun NavGraphBuilder.quickstepGraph(route: String) {
+ @Composable
+ fun QuickstepPreferences() {
+     val prefs = preferenceManager()
++    val prefs2 = preferenceManager2()
+     val context = LocalContext.current
+     val lensAvailable = remember {
+         context.packageManager.getLaunchIntentForPackage("com.google.ar.lens") != null
+@@ -57,6 +59,15 @@ fun QuickstepPreferences() {
+                 label = stringResource(id = R.string.recents_clear_all),
+             )
+         }
++        PreferenceGroup(heading = stringResource(id = R.string.general_label)) {
++            SliderPreference(
++                label = stringResource(id = R.string.recents_background_opacity),
++                adapter = prefs2.recentsBackgroundOpacity.getAdapter(),
++                step = 0.05f,
++                valueRange = 0f..1f,
++                showAsPercentage = true,
++            )
++        }
+         val overrideWindowCornerRadius by prefs.overrideWindowCornerRadius.observeAsState()
+         PreferenceGroup(
+             heading = stringResource(id = R.string.window_corner_radius_label),
+diff --git a/src/com/android/launcher3/BaseDraggingActivity.java b/src/com/android/launcher3/BaseDraggingActivity.java
+index 73ad802..7ba2822 100644
+--- a/src/com/android/launcher3/BaseDraggingActivity.java
++++ b/src/com/android/launcher3/BaseDraggingActivity.java
+@@ -46,6 +46,10 @@ import androidx.annotation.NonNull;
+ import androidx.annotation.Nullable;
+ 
+ import com.android.launcher3.LauncherSettings.Favorites;
++
++import app.lawnchair.preferences2.PreferenceManager2;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
++
+ import com.android.launcher3.allapps.AllAppsContainerView;
+ import com.android.launcher3.allapps.search.DefaultSearchAdapterProvider;
+ import com.android.launcher3.allapps.search.SearchAdapterProvider;
+@@ -195,6 +199,11 @@ public abstract class BaseDraggingActivity extends BaseActivity
+         }
+ 
+         Bundle optsBundle = (v != null) ? getActivityLaunchOptions(v, item).toBundle() : null;
++        if (optsBundle != null && PreferenceExtensionsKt.firstBlocking(
++                PreferenceManager2.getInstance(this).getDisableSplashScreen())) {
++            // SplashScreen.SPLASH_SCREEN_STYLE_EMPTY: solid color splash instead of the icon
++            optsBundle.putInt("android.activity.splashScreenStyle", 0);
++        }
+         UserHandle user = item == null ? null : item.user;
+ 
+         // Prepare intent
 diff --git a/src/com/android/launcher3/CellLayout.java b/src/com/android/launcher3/CellLayout.java
 index e24ee43..7264f53 100644
 --- a/src/com/android/launcher3/CellLayout.java
@@ -330,6 +519,67 @@ index d5c71af..e86773e 100644
      }
  
      /**
+diff --git a/src/com/android/launcher3/allapps/AllAppsContainerView.java b/src/com/android/launcher3/allapps/AllAppsContainerView.java
+index a7c75ad..e27fd09 100644
+--- a/src/com/android/launcher3/allapps/AllAppsContainerView.java
++++ b/src/com/android/launcher3/allapps/AllAppsContainerView.java
+@@ -72,12 +72,14 @@ import com.android.launcher3.keyboard.FocusedItemDecorator;
+ import com.android.launcher3.model.data.AppInfo;
+ import com.android.launcher3.testing.TestProtocol;
+ import com.android.launcher3.util.ItemInfoMatcher;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
+ import com.android.launcher3.util.Themes;
+ import com.android.launcher3.views.RecyclerViewFastScroller;
+ import com.android.launcher3.views.ScrimView;
+ import com.android.launcher3.workprofile.PersonalWorkSlidingTabStrip.OnActivePageChangedListener;
+ 
+ import app.lawnchair.allapps.LawnchairAlphabeticalAppsList;
++import app.lawnchair.preferences2.PreferenceManager2;
+ import app.lawnchair.theme.color.ColorTokens;
+ import app.lawnchair.ui.StretchRecyclerViewContainer;
+ 
+@@ -138,6 +140,8 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+     private final float mHeaderThreshold;
+     private ScrimView mScrimView;
+     private int mHeaderColor;
++    private final int mExtraDrawerPaddingHpx;
++    private final int mExtraDrawerPaddingVpx;
+ 
+     public AllAppsContainerView(Context context) {
+         this(context, null);
+@@ -152,6 +156,12 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+ 
+         mLauncher = BaseDraggingActivity.fromContext(context);
+ 
++        PreferenceManager2 preferenceManager2 = PreferenceManager2.getInstance(context);
++        mExtraDrawerPaddingHpx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerPaddingHorizontal()));
++        mExtraDrawerPaddingVpx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerPaddingVertical()));
++
+         mScrimColor = ColorTokens.AllAppsScrimColor.resolveColor(context);
+         mHeaderThreshold = getResources().getDimensionPixelSize(
+                 R.dimen.dynamic_grid_cell_border_spacing);
+@@ -405,8 +415,8 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+                 + grid.cellLayoutPaddingLeftRightPx;
+ 
+         for (int i = 0; i < mAH.length; i++) {
+-            mAH[i].padding.bottom = insets.bottom;
+-            mAH[i].padding.left = mAH[i].padding.right = leftRightPadding;
++            mAH[i].padding.bottom = insets.bottom + mExtraDrawerPaddingVpx;
++            mAH[i].padding.left = mAH[i].padding.right = leftRightPadding + mExtraDrawerPaddingHpx;
+             mAH[i].applyPadding();
+         }
+ 
+@@ -621,7 +631,7 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+ 
+         int padding = mHeader.getMaxTranslation();
+         for (int i = 0; i < mAH.length; i++) {
+-            mAH[i].padding.top = padding;
++            mAH[i].padding.top = padding + mExtraDrawerPaddingVpx;
+             mAH[i].applyPadding();
+         }
+         mHeaderTop = mHeader.getTop();
 diff --git a/src/com/android/launcher3/model/LoaderCursor.java b/src/com/android/launcher3/model/LoaderCursor.java
 index 93f824f..0d001b5 100644
 --- a/src/com/android/launcher3/model/LoaderCursor.java
