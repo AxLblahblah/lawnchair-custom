@@ -16,7 +16,7 @@ jobs:
           cd src
           git submodule update --init --depth 1
           if [ -n "$(tail -c 1 ../custom-build.patch)" ]; then printf '\n' >> ../custom-build.patch; fi
-          grep -q "dock_disabled" ../custom-build.patch || { echo "ERROR: patch looks truncated/old - re-paste it"; exit 1; }
+          grep -q "force_resizable_widgets" ../custom-build.patch || { echo "ERROR: patch looks truncated/old - re-paste it"; exit 1; }
           git apply --whitespace=nowarn ../custom-build.patch
 
       - uses: actions/setup-java@v4
