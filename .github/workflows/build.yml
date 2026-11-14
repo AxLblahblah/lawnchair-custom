@@ -40,9 +40,10 @@ jobs:
             printf 'keyAlias=lawnchair\nkeyPassword=%s\nstoreFile=lawnchair.keystore\nstorePassword=%s\n' "$KEYSTORE_PASS" "$KEYSTORE_PASS" > keystore.properties
           fi
 
-      - name: Build
+            - name: Build
         working-directory: src
         run: |
+          chmod +x gradlew
           if [ -f keystore.properties ]; then
             ./gradlew assembleLawnWithQuickstepRelease assembleLawnWithQuickstepDebug -x lint
           else
