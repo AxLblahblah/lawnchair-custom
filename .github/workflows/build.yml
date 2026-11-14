@@ -10,13 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch Lawnchair 12.1-dev and apply patch
+      - name: Fetch Lawnchair 12-dev and apply patch
         run: |
-          git clone --depth 1 -b 12.1-dev https://github.com/LawnchairLauncher/lawnchair.git src
+          git clone --depth 1 -b 12-dev https://github.com/LawnchairLauncher/lawnchair.git src
           cd src
           git submodule update --init --depth 1
           if [ -n "$(tail -c 1 ../custom-build.patch)" ]; then printf '\n' >> ../custom-build.patch; fi
-          grep -q "WorkspaceSearchBar" ../custom-build.patch || { echo "ERROR: patch looks truncated/old - re-paste it"; exit 1; }
+          grep -q "dock_disabled" ../custom-build.patch || { echo "ERROR: patch looks truncated/old - re-paste it"; exit 1; }
           git apply --whitespace=nowarn ../custom-build.patch
 
       - uses: actions/setup-java@v4
