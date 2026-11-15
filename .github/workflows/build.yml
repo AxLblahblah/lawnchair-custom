@@ -16,6 +16,8 @@ jobs:
           cd src
           git submodule update --init --depth 1
           if [ -n "$(tail -c 1 ../custom-build.patch)" ]; then printf '\n' >> ../custom-build.patch; fi
+          sed -i 's/FocusHighlight = DayNightColorToken(Neutral2_500.setLStar(87.0), Neutral1_800)/FocusHighlight = DayNightColorToken(Neutral1_0, Neutral1_700)/' ../custom-build.patch
+          sed -i 's/isRegionVacant(int x, int y, spanX, spanY)/isRegionVacant(int x, int y, int spanX, int spanY)/' ../custom-build.patch
           grep -q "force_resizable_widgets" ../custom-build.patch || { echo "ERROR: patch looks truncated/old - re-paste it"; exit 1; }
           git apply --whitespace=nowarn ../custom-build.patch
 
