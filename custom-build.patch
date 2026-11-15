@@ -1,5 +1,43 @@
+diff --git a/AndroidManifest.xml b/AndroidManifest.xml
+index c1666c0..a4c4c11 100644
+--- a/AndroidManifest.xml
++++ b/AndroidManifest.xml
+@@ -71,5 +71,33 @@
+                 android:value="${packageName}.grid_control" />
+         </activity>
+ 
++        <!-- Folder widget (Material You) -->
++        <receiver
++            android:name="app.lawnchair.folderwidget.FolderWidgetProvider"
++            android:label="@string/folder_widget_label"
++            android:exported="false">
++            <intent-filter>
++                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
++                <action android:name="app.lawnchair.folderwidget.ACTION_LAUNCH_APP" />
++            </intent-filter>
++            <meta-data
++                android:name="android.appwidget.provider"
++                android:resource="@xml/folder_widget_info" />
++        </receiver>
++
++        <service
++            android:name="app.lawnchair.folderwidget.FolderWidgetService"
++            android:permission="android.permission.BIND_REMOTEVIEWS"
++            android:exported="false" />
++
++        <activity
++            android:name="app.lawnchair.folderwidget.FolderWidgetConfigActivity"
++            android:theme="@style/HomeSettingsTheme"
++            android:exported="false">
++            <intent-filter>
++                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
++            </intent-filter>
++        </activity>
++
+     </application>
+ </manifest>
 diff --git a/build.gradle b/build.gradle
-index f3f9c1d..e55784d 100644
+index f3f9c1d..c055843 100644
 --- a/build.gradle
 +++ b/build.gradle
 @@ -33,6 +33,14 @@ allprojects {
@@ -17,6 +55,17 @@ index f3f9c1d..e55784d 100644
      ext.addFrameworkJar = { String path ->
          def frameworkJar = new File(rootProject.projectDir, 'prebuilts/libs/' + path)
          if (!frameworkJar.exists()) {
+@@ -146,8 +154,8 @@ android {
+ 
+         release {
+             if (keystorePropertiesFile.exists()) signingConfig signingConfigs.release
+-            minifyEnabled true
+-            shrinkResources true
++            minifyEnabled false
++            shrinkResources false
+             proguardFiles "proguard-android-optimize.txt", "proguard.flags"
+         }
+     }
 @@ -284,9 +292,9 @@ allprojects {
  }
  
@@ -61,6 +110,21 @@ index 7e12249..2b1d256 100644
  
  GRADLE_CLASS_PATH=com.android.tools.build:gradle:4.0.0
  
+diff --git a/lawnchair/res/drawable/ic_backup.xml b/lawnchair/res/drawable/ic_backup.xml
+new file mode 100644
+index 0000000..407a1ff
+--- /dev/null
++++ b/lawnchair/res/drawable/ic_backup.xml
+@@ -0,0 +1,9 @@
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="24dp"
++    android:height="24dp"
++    android:viewportWidth="24"
++    android:viewportHeight="24">
++    <path
++        android:fillColor="@android:color/white"
++        android:pathData="M19.35,10.04C18.67,6.59 15.64,4 12,4 9.11,4 6.6,5.64 5.35,8.04 2.34,8.36 0,10.91 0,14c0,3.31 2.69,6 6,6h13c2.76,0 5,-2.24 5,-5 0,-2.64 -2.05,-4.78 -4.65,-4.96zM14,13v4h-4v-4H7l5,-5 5,5h-3z" />
++</vector>
 diff --git a/lawnchair/res/values/config.xml b/lawnchair/res/values/config.xml
 index 992164c..e09ae92 100644
 --- a/lawnchair/res/values/config.xml
@@ -77,10 +141,10 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..9049213 100644
+index 1d81cd7..4276826 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
-@@ -33,6 +33,17 @@
+@@ -33,6 +33,34 @@
      <string name="auto_add_shortcuts_label">Add New Apps to Home Screen</string>
      <string name="dock_label">Dock</string>
      <string name="dock_description">Search Bar, Icon Count</string>
@@ -90,6 +154,23 @@ index 1d81cd7..9049213 100644
 +    <string name="workspace_padding_vertical">Vertical Padding</string>
 +    <string name="force_resizable_widgets">Force Resizable Widgets</string>
 +    <string name="drawer_padding">Drawer Padding</string>
++    <string name="misc_label">Misc</string>
++    <string name="hide_drawer_scrollbar">Hide Scrollbar</string>
++    <string name="backup_restore_label">Backup &amp; Restore</string>
++    <string name="backup_restore_description">Back up or restore your homescreen layout, widgets, custom icons and settings</string>
++    <string name="backup_button">Backup</string>
++    <string name="restore_button">Restore</string>
++    <string name="backup_info">The backup file contains your homescreen layout (widgets, folders, icon placement), the app drawer, all Lawnchair settings and custom icons. Icon packs themselves are not included, so keep them installed. Third-party widgets may need to be re-added after a restore.</string>
++    <string name="backup_created">Backup created</string>
++    <string name="backup_failed">Backup failed</string>
++    <string name="restore_done">Restore complete, restarting…</string>
++    <string name="restore_failed">Restore failed</string>
++    <string name="restore_confirm_title">Restore backup?</string>
++    <string name="restore_confirm_message">This will replace your current layout and settings with the ones from the backup file. The launcher will restart.</string>
++    <string name="folder_widget_label">Material You Folder</string>
++    <string name="folder_widget_pick_folder">Pick a folder for the widget</string>
++    <string name="folder_widget_all_apps">All apps</string>
++    <string name="folder_widget_failed_to_load">Folder not found</string>
 +    <string name="recents_background_opacity">Recents Background Opacity</string>
 +    <string name="disable_splash_screen">Disable Splash Screen</string>
 +    <string name="animations_label">Animations</string>
@@ -98,11 +179,770 @@ index 1d81cd7..9049213 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
+diff --git a/lawnchair/src/app/lawnchair/backup/BackupUtils.kt b/lawnchair/src/app/lawnchair/backup/BackupUtils.kt
+new file mode 100644
+index 0000000..7903876
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/backup/BackupUtils.kt
+@@ -0,0 +1,180 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.backup
++
++import android.content.Context
++import android.database.sqlite.SQLiteDatabase
++import android.net.Uri
++import com.android.launcher3.LauncherFiles
++import com.android.launcher3.util.IOUtils
++import app.lawnchair.util.restartLauncher
++import java.io.File
++import java.io.IOException
++import java.text.SimpleDateFormat
++import java.util.Date
++import java.util.Locale
++import java.util.zip.ZipEntry
++import java.util.zip.ZipInputStream
++import java.util.zip.ZipOutputStream
++
++/**
++ * Creates and restores full launcher backups.
++ *
++ * A backup is a plain .zip file containing:
++ *  - databases/launcher.db (+ wal/shm if present)  -> homescreen layout, folders, widgets, hotseat
++ *  - databases/preferences (+ wal/shm if present)  -> custom icon overrides (Room)
++ *  - datastore/preferences.preferences_pb          -> PreferenceManager2 (new preference system)
++ *  - shared_prefs (all XML files)                  -> old preference system + launcher prefs
++ */
++object BackupUtils {
++
++    const val MANIFEST_ENTRY = "manifest.txt"
++    const val LAUNCHER_DB_ENTRY = "databases/launcher.db"
++    const val ICON_DB_ENTRY = "databases/preferences"
++    const val DATASTORE_ENTRY = "datastore/preferences.preferences_pb"
++    const val SHARED_PREFS_PREFIX = "shared_prefs/"
++
++    fun suggestedFileName(): String {
++        val format = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.US)
++        return "lawnchair-backup_${format.format(Date())}.zip"
++    }
++
++    private fun dataDir(context: Context) = context.applicationInfo.dataDir
++
++    fun createBackup(context: Context, uri: Uri) {
++        val output = context.contentResolver.openOutputStream(uri)
++            ?: throw IOException("Could not open output stream")
++        output.use { out ->
++            ZipOutputStream(out).use { zip ->
++                putStringEntry(zip, MANIFEST_ENTRY, manifestContent())
++
++                val databasesDir = File(dataDir(context), "databases")
++                // Flush WAL content into the main db files so the copies are complete.
++                checkpointDb(File(databasesDir, "launcher.db"))
++                checkpointDb(File(databasesDir, "preferences"))
++
++                putFileEntry(zip, databasesDir, "launcher.db", LAUNCHER_DB_ENTRY)
++                putFileEntry(zip, databasesDir, "launcher.db-wal", "$LAUNCHER_DB_ENTRY-wal")
++                putFileEntry(zip, databasesDir, "launcher.db-shm", "$LAUNCHER_DB_ENTRY-shm")
++                putFileEntry(zip, databasesDir, "preferences", ICON_DB_ENTRY)
++                putFileEntry(zip, databasesDir, "preferences-wal", "$ICON_DB_ENTRY-wal")
++                putFileEntry(zip, databasesDir, "preferences-shm", "$ICON_DB_ENTRY-shm")
++
++                val datastoreDir = File(context.filesDir, "datastore")
++                putFileEntry(zip, datastoreDir, "preferences.preferences_pb", DATASTORE_ENTRY)
++
++                val sharedPrefsDir = File(dataDir(context), "shared_prefs")
++                sharedPrefsDir.listFiles { file -> file.name.endsWith(".xml") }?.forEach { file ->
++                    putFileEntry(zip, sharedPrefsDir, file.name, SHARED_PREFS_PREFIX + file.name)
++                }
++            }
++        }
++    }
++
++    /**
++     * Restores the given backup and restarts the launcher process so every
++     * component picks up the restored files.
++     */
++    fun restoreBackup(context: Context, uri: Uri) {
++        val input = context.contentResolver.openInputStream(uri)
++            ?: throw IOException("Could not open input stream")
++
++        // Read everything into memory first so a broken file cannot wipe the live data.
++        data class Entry(val name: String, val bytes: ByteArray)
++        val entries = mutableListOf<Entry>()
++        input.use { raw ->
++            ZipInputStream(raw).use { zip ->
++                while (true) {
++                    val entry = zip.nextEntry ?: break
++                    if (!entry.isDirectory) {
++                        entries.add(Entry(entry.name, IOUtils.toByteArray(zip)))
++                    }
++                    zip.closeEntry()
++                }
++            }
++        }
++        if (entries.none { it.name == LAUNCHER_DB_ENTRY }) {
++            throw IOException("Not a valid Lawnchair backup file")
++        }
++
++        val databasesDir = File(dataDir(context), "databases")
++        val datastoreDir = File(context.filesDir, "datastore")
++        val sharedPrefsDir = File(dataDir(context), "shared_prefs")
++        databasesDir.mkdirs()
++        datastoreDir.mkdirs()
++        sharedPrefsDir.mkdirs()
++
++        entries.forEach { entry ->
++            val target: File = when {
++                entry.name == LAUNCHER_DB_ENTRY -> File(databasesDir, "launcher.db")
++                entry.name == "$LAUNCHER_DB_ENTRY-wal" -> File(databasesDir, "launcher.db-wal")
++                entry.name == "$LAUNCHER_DB_ENTRY-shm" -> File(databasesDir, "launcher.db-shm")
++                entry.name == ICON_DB_ENTRY -> File(databasesDir, "preferences")
++                entry.name == "$ICON_DB_ENTRY-wal" -> File(databasesDir, "preferences-wal")
++                entry.name == "$ICON_DB_ENTRY-shm" -> File(databasesDir, "preferences-shm")
++                entry.name == DATASTORE_ENTRY -> File(datastoreDir, "preferences.preferences_pb")
++                entry.name.startsWith(SHARED_PREFS_PREFIX) ->
++                    File(sharedPrefsDir, entry.name.removePrefix(SHARED_PREFS_PREFIX))
++                else -> return@forEach
++            }
++            target.parentFile?.mkdirs()
++            target.writeBytes(entry.bytes)
++        }
++
++        // Stale wal/shm files from the *current* database must not be applied on top
++        // of the restored main db files.
++        if (entries.none { it.name == "$LAUNCHER_DB_ENTRY-wal" }) File(databasesDir, "launcher.db-wal").delete()
++        if (entries.none { it.name == "$LAUNCHER_DB_ENTRY-shm" }) File(databasesDir, "launcher.db-shm").delete()
++        if (entries.none { it.name == "$ICON_DB_ENTRY-wal" }) File(databasesDir, "preferences-wal").delete()
++        if (entries.none { it.name == "$ICON_DB_ENTRY-shm" }) File(databasesDir, "preferences-shm").delete()
++
++        restartLauncher(context)
++    }
++
++    private fun manifestContent(): String {
++        val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
++        return "lawnchair-backup v1\ncreated: ${format.format(Date())}\n"
++    }
++
++    private fun putStringEntry(zip: ZipOutputStream, name: String, content: String) {
++        zip.putNextEntry(ZipEntry(name))
++        zip.write(content.toByteArray(Charsets.UTF_8))
++        zip.closeEntry()
++    }
++
++    private fun putFileEntry(zip: ZipOutputStream, dir: File, fileName: String, entryName: String) {
++        val file = File(dir, fileName)
++        if (!file.exists()) return
++        zip.putNextEntry(ZipEntry(entryName))
++        file.inputStream().use { it.copyTo(zip) }
++        zip.closeEntry()
++    }
++
++    private fun checkpointDb(file: File) {
++        if (!file.exists()) return
++        try {
++            val db = SQLiteDatabase.openDatabase(file.absolutePath, null, SQLiteDatabase.OPEN_READWRITE)
++            try {
++                db.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { it.moveToFirst() }
++            } finally {
++                db.close()
++            }
++        } catch (_: Throwable) {
++            // Best effort; the plain file copy still usually produces a valid backup.
++        }
++    }
++}
+diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
+new file mode 100644
+index 0000000..0bf0ede
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
+@@ -0,0 +1,125 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.folderwidget
++
++import android.appwidget.AppWidgetManager
++import android.content.Intent
++import android.os.Bundle
++import androidx.activity.compose.setContent
++import androidx.appcompat.app.AppCompatActivity
++import androidx.compose.foundation.clickable
++import androidx.compose.foundation.layout.Box
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.fillMaxSize
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.padding
++import androidx.compose.foundation.rememberScrollState
++import androidx.compose.foundation.verticalScroll
++import androidx.compose.material3.MaterialTheme
++import androidx.compose.material3.Text
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.LaunchedEffect
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.res.stringResource
++import androidx.compose.ui.unit.dp
++import app.lawnchair.ui.theme.LawnchairTheme
++import com.android.launcher3.R
++
++/**
++ * Configuration screen shown when the folder widget is added.
++ * Lets the user pick which folder (or all apps) the widget shows.
++ */
++class FolderWidgetConfigActivity : AppCompatActivity() {
++
++    private var appWidgetId = -1
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        appWidgetId = intent?.extras?.getInt(
++            AppWidgetManager.EXTRA_APPWIDGET_ID, -1) ?: -1
++        if (appWidgetId == -1) {
++            finish()
++            return
++        }
++        setResult(RESULT_CANCELED)
++
++        setContent {
++            LawnchairTheme {
++                FolderWidgetConfigScreen(
++                    onPicked = { folderId ->
++                        FolderWidgetData.setFolderId(this, appWidgetId, folderId)
++                        val manager = AppWidgetManager.getInstance(this)
++                        FolderWidgetProvider.updateWidget(this, manager, appWidgetId)
++                        setResult(
++                            RESULT_OK,
++                            Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
++                        )
++                        finish()
++                    }
++                )
++            }
++        }
++    }
++}
++
++@Composable
++fun FolderWidgetConfigScreen(onPicked: (Long) -> Unit) {
++    val context = LocalContext.current
++    var folders by remember { mutableStateOf<List<FolderWidgetData.FolderEntry>>(emptyList()) }
++
++    LaunchedEffect(Unit) {
++        folders = FolderWidgetData.queryFolders(context)
++    }
++
++    Column(
++        modifier = Modifier
++            .fillMaxSize()
++            .verticalScroll(rememberScrollState())
++    ) {
++        Box(modifier = Modifier.padding(16.dp)) {
++            Text(
++                text = stringResource(id = R.string.folder_widget_pick_folder),
++                style = MaterialTheme.typography.titleMedium,
++            )
++        }
++        ConfigRow(label = stringResource(id = R.string.folder_widget_all_apps)) {
++            onPicked(FolderWidgetData.FOLDER_ID_ALL_APPS)
++        }
++        folders.forEach { folder ->
++            ConfigRow(label = folder.title) {
++                onPicked(folder.id)
++            }
++        }
++    }
++}
++
++@Composable
++private fun ConfigRow(label: String, onClick: () -> Unit) {
++    Text(
++        text = label,
++        style = MaterialTheme.typography.bodyLarge,
++        modifier = Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++            .padding(horizontal = 16.dp, vertical = 14.dp)
++    )
++}
+diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetData.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetData.kt
+new file mode 100644
+index 0000000..2056252
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetData.kt
+@@ -0,0 +1,205 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.folderwidget
++
++import android.content.pm.LauncherApps
++import android.appwidget.AppWidgetManager
++import android.content.ComponentName
++import android.content.Context
++import android.content.Intent
++import android.content.res.Configuration
++import android.graphics.Bitmap
++import android.graphics.Canvas
++import android.graphics.drawable.Drawable
++import android.os.Process
++import androidx.core.graphics.ColorUtils
++import com.android.launcher3.LauncherSettings
++import com.android.launcher3.R
++import com.android.launcher3.Utilities
++
++object FolderWidgetData {
++
++    const val PREFS_FILE = "folder_widget_config"
++    const val EXTRA_WIDGET_ID = "appWidgetId"
++    const val EXTRA_FOLDER_ID = "folderId"
++    const val EXTRA_COMPONENT = "component"
++    const val ACTION_LAUNCH_APP = "app.lawnchair.folderwidget.ACTION_LAUNCH_APP"
++    const val FOLDER_ID_ALL_APPS = -1L
++
++    data class FolderEntry(val id: Long, val title: String)
++
++    data class AppEntry(
++        val component: ComponentName,
++        val label: String,
++        val icon: Bitmap?,
++    )
++
++    fun getConfigPrefs(context: Context) =
++        context.getSharedPreferences(PREFS_FILE, Context.MODE_PRIVATE)
++
++    fun getFolderId(context: Context, appWidgetId: Int): Long {
++        return getConfigPrefs(context).getLong("widget_${appWidgetId}_folderId", FOLDER_ID_ALL_APPS)
++    }
++
++    fun setFolderId(context: Context, appWidgetId: Int, folderId: Long) {
++        getConfigPrefs(context).edit()
++            .putLong("widget_${appWidgetId}_folderId", folderId)
++            .apply()
++    }
++
++    /** Lists all folders currently on the homescreen. */
++    fun queryFolders(context: Context): List<FolderEntry> {
++        val result = mutableListOf<FolderEntry>()
++        try {
++            context.contentResolver.query(
++                LauncherSettings.Favorites.CONTENT_URI,
++                arrayOf(LauncherSettings.Favorites._ID, LauncherSettings.Favorites.TITLE),
++                "${LauncherSettings.Favorites.ITEM_TYPE} = ${LauncherSettings.Favorites.ITEM_TYPE_FOLDER}",
++                null,
++                null,
++            )?.use { cursor ->
++                val idIndex = cursor.getColumnIndexOrThrow(LauncherSettings.Favorites._ID)
++                val titleIndex = cursor.getColumnIndexOrThrow(LauncherSettings.Favorites.TITLE)
++                while (cursor.moveToNext()) {
++                    val id = cursor.getLong(idIndex)
++                    val title = if (titleIndex >= 0 && !cursor.isNull(titleIndex)) {
++                        cursor.getString(titleIndex)
++                    } else {
++                        "Folder"
++                    }
++                    if (title != null) {
++                        result.add(FolderEntry(id, title))
++                    }
++                }
++            }
++        } catch (_: Throwable) {
++        }
++        return result
++    }
++
++    /** Lists the apps inside the given folder, or every app when folderId == ALL_APPS. */
++    fun queryApps(context: Context, folderId: Long): List<AppEntry> {
++        if (folderId == FOLDER_ID_ALL_APPS) {
++            return queryAllApps(context)
++        }
++        val components = mutableListOf<ComponentName>()
++        try {
++            context.contentResolver.query(
++                LauncherSettings.Favorites.CONTENT_URI,
++                arrayOf(LauncherSettings.Favorites.INTENT),
++                "${LauncherSettings.Favorites.CONTAINER} = ? AND " +
++                    "${LauncherSettings.Favorites.ITEM_TYPE} = ${LauncherSettings.Favorites.ITEM_TYPE_APPLICATION}",
++                arrayOf(folderId.toString()),
++                null,
++            )?.use { cursor ->
++                val intentIndex = cursor.getColumnIndexOrThrow(LauncherSettings.Favorites.INTENT)
++                while (cursor.moveToNext()) {
++                    if (cursor.isNull(intentIndex)) continue
++                    val intentText = cursor.getString(intentIndex) ?: continue
++                    try {
++                        val intent = Intent.parseUri(intentText, 0)
++                        val component = intent.component ?: continue
++                        if (component.packageName != context.packageName) {
++                            components.add(component)
++                        }
++                    } catch (_: Throwable) {
++                    }
++                }
++            }
++        } catch (_: Throwable) {
++        }
++        return components.distinct().mapNotNull { resolveApp(context, it) }
++    }
++
++    private fun queryAllApps(context: Context): List<AppEntry> {
++        val launcherApps = context.getSystemService(LauncherApps::class.java) ?: return emptyList()
++        val apps = mutableListOf<AppEntry>()
++        try {
++            launcherApps.getActivityList(null, Process.myUserHandle()).forEach { activity ->
++                try {
++                    val component = activity.componentName
++                    val label = activity.label?.toString() ?: component.shortClassName
++                    apps.add(AppEntry(component, label, drawableToBitmap(activity.getBadgedIcon(0), context)))
++                } catch (_: Throwable) {
++                }
++            }
++        } catch (_: Throwable) {
++        }
++        return apps.sortedBy { it.label.lowercase() }
++    }
++
++    private fun resolveApp(context: Context, component: ComponentName): AppEntry? {
++        return try {
++            val pm = context.packageManager
++            val info = pm.getActivityInfo(component, 0)
++            val label = info.loadLabel(pm)?.toString() ?: component.shortClassName
++            AppEntry(component, label, drawableToBitmap(info.loadIcon(pm), context))
++        } catch (_: Throwable) {
++            null
++        }
++    }
++
++    fun drawableToBitmap(drawable: Drawable?, context: Context): Bitmap? {
++        drawable ?: return null
++        return try {
++            val size = (48 * context.resources.displayMetrics.density).toInt()
++            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
++            val canvas = Canvas(bitmap)
++            drawable.setBounds(0, 0, size, size)
++            drawable.draw(canvas)
++            bitmap
++        } catch (_: Throwable) {
++            null
++        }
++    }
++
++    /** Material You dynamic colors from the system wallpaper palette (API 31+). */
++    data class MaterialYouColors(val container: Int, val title: Int, val label: Int)
++
++    fun resolveColors(context: Context): MaterialYouColors {
++        val isDark = (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
++            Configuration.UI_MODE_NIGHT_YES
++        if (Utilities.ATLEAST_S) {
++            return if (isDark) {
++                MaterialYouColors(
++                    container = ColorUtils.setAlphaComponent(
++                        context.getColor(android.R.color.system_accent1_700), 230),
++                    title = context.getColor(android.R.color.system_accent1_100),
++                    label = context.getColor(android.R.color.system_accent1_100),
++                )
++            } else {
++                MaterialYouColors(
++                    container = ColorUtils.setAlphaComponent(
++                        context.getColor(android.R.color.system_accent1_100), 230),
++                    title = context.getColor(android.R.color.system_accent1_900),
++                    label = context.getColor(android.R.color.system_accent1_900),
++                )
++            }
++        }
++        // Pre-S fallback: neutral translucent container.
++        return if (isDark) {
++            MaterialYouColors(0xE6202021.toInt(), 0xFFE0E0E0.toInt(), 0xFFE0E0E0.toInt())
++        } else {
++            MaterialYouColors(0xE6F1F1F1.toInt(), 0xFF202124.toInt(), 0xFF202124.toInt())
++        }
++    }
++
++    fun getWidgetIds(context: Context): IntArray {
++        val manager = AppWidgetManager.getInstance(context)
++        return manager.getAppWidgetIds(ComponentName(context, FolderWidgetProvider::class.java))
++    }
++}
+diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetProvider.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetProvider.kt
+new file mode 100644
+index 0000000..8d44ad1
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetProvider.kt
+@@ -0,0 +1,131 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.folderwidget
++
++import android.content.pm.LauncherApps
++import android.app.PendingIntent
++import android.appwidget.AppWidgetManager
++import android.appwidget.AppWidgetProvider
++import android.content.ComponentName
++import android.content.Context
++import android.content.Intent
++import android.net.Uri
++import android.os.Build
++import android.os.Process
++import android.util.TypedValue
++import android.widget.RemoteViews
++import com.android.launcher3.R
++
++/**
++ * A scrollable widget that shows the apps of a chosen homescreen folder
++ * (or all apps) inside a Material You styled container.
++ */
++class FolderWidgetProvider : AppWidgetProvider() {
++
++    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
++        appWidgetIds.forEach { id -> updateWidget(context, appWidgetManager, id) }
++    }
++
++    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
++        appWidgetIds.forEach { id ->
++            FolderWidgetData.getConfigPrefs(context).edit()
++                .remove("widget_${id}_folderId")
++                .apply()
++        }
++    }
++
++    override fun onReceive(context: Context, intent: Intent) {
++        super.onReceive(context, intent)
++        if (intent.action == FolderWidgetData.ACTION_LAUNCH_APP) {
++            val component = intent.getStringExtra(FolderWidgetData.EXTRA_COMPONENT)
++            if (component != null) {
++                try {
++                    val cn = ComponentName.unflattenFromString(component)
++                    if (cn != null) {
++                        context.getSystemService(LauncherApps::class.java)
++                            ?.startMainActivity(cn, Process.myUserHandle(), null, null)
++                    }
++                } catch (_: Throwable) {
++                }
++            }
++        }
++    }
++
++    companion object {
++
++        @JvmStatic
++        fun updateWidget(context: Context, manager: AppWidgetManager, appWidgetId: Int) {
++            val colors = FolderWidgetData.resolveColors(context)
++
++            val views = RemoteViews(context.packageName, R.layout.folder_widget)
++            views.setInt(R.id.folder_widget_root, "setBackgroundColor", colors.container)
++            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
++                views.setViewOutlinePreferredRadius(
++                    R.id.folder_widget_root, 24f, TypedValue.COMPLEX_UNIT_DIP)
++            }
++            views.setBoolean(R.id.folder_widget_root, "setClipToOutline", true)
++            views.setTextColor(R.id.folder_widget_title, colors.title)
++
++            val folderId = FolderWidgetData.getFolderId(context, appWidgetId)
++            val title = if (folderId == FolderWidgetData.FOLDER_ID_ALL_APPS) {
++                context.getString(R.string.folder_widget_all_apps)
++            } else {
++                FolderWidgetData.queryFolders(context)
++                    .firstOrNull { it.id == folderId }?.title
++                    ?: context.getString(R.string.folder_widget_failed_to_load)
++            }
++            views.setTextViewText(R.id.folder_widget_title, title)
++
++            // Tapping the header brings the launcher forward.
++            val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
++                .setPackage(context.packageName)
++            views.setOnClickPendingIntent(
++                R.id.folder_widget_title,
++                PendingIntent.getActivity(
++                    context, appWidgetId, homeIntent,
++                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
++                )
++            )
++
++            // Scrollable grid backed by the RemoteViewsService.
++            val adapterIntent = Intent(context, FolderWidgetService::class.java)
++                .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
++                .setData(Uri.parse("folderwidget://$appWidgetId"))
++            views.setRemoteAdapter(R.id.folder_widget_grid, adapterIntent)
++
++            val launchTemplate = PendingIntent.getBroadcast(
++                context, 0,
++                Intent(context, FolderWidgetProvider::class.java)
++                    .setAction(FolderWidgetData.ACTION_LAUNCH_APP),
++                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
++            )
++            views.setPendingIntentTemplate(R.id.folder_widget_grid, launchTemplate)
++
++            manager.updateAppWidget(appWidgetId, views)
++            manager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.folder_widget_grid)
++        }
++
++        /** Refreshes every folder widget (called when the layout or its apps change). */
++        @JvmStatic
++        fun updateAll(context: Context) {
++            val manager = AppWidgetManager.getInstance(context)
++            val ids = FolderWidgetData.getWidgetIds(context)
++            if (ids.isEmpty()) return
++            ids.forEach { id -> updateWidget(context, manager, id) }
++        }
++    }
++}
+diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetService.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetService.kt
+new file mode 100644
+index 0000000..3e045ac
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetService.kt
+@@ -0,0 +1,88 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.folderwidget
++
++import android.appwidget.AppWidgetManager
++import android.content.Context
++import android.content.Intent
++import android.graphics.Bitmap
++import android.widget.RemoteViews
++import android.widget.RemoteViewsService
++import com.android.launcher3.R
++
++class FolderWidgetService : RemoteViewsService() {
++
++    override fun onGetViewFactory(intent: Intent): RemoteViewsFactory {
++        return FolderWidgetFactory(applicationContext, intent)
++    }
++}
++
++class FolderWidgetFactory(
++    private val context: Context,
++    intent: Intent,
++) : RemoteViewsService.RemoteViewsFactory {
++
++    private val appWidgetId = intent.getIntExtra(
++        AppWidgetManager.EXTRA_APPWIDGET_ID, -1)
++
++    private var apps: List<FolderWidgetData.AppEntry> = emptyList()
++    private var colors = FolderWidgetData.MaterialYouColors(0, 0, 0)
++
++    override fun onCreate() {
++        colors = FolderWidgetData.resolveColors(context)
++    }
++
++    override fun onDataSetChanged() {
++        colors = FolderWidgetData.resolveColors(context)
++        val folderId = FolderWidgetData.getFolderId(context, appWidgetId)
++        apps = try {
++            FolderWidgetData.queryApps(context, folderId)
++        } catch (_: Throwable) {
++            emptyList()
++        }
++    }
++
++    override fun onDestroy() {
++        apps = emptyList()
++    }
++
++    override fun getCount(): Int = apps.size
++
++    override fun getViewAt(position: Int): RemoteViews {
++        val views = RemoteViews(context.packageName, R.layout.folder_widget_item)
++        val app = apps.getOrNull(position)
++        if (app != null) {
++            views.setTextViewText(R.id.folder_widget_item_label, app.label)
++            views.setTextColor(R.id.folder_widget_item_label, colors.label)
++            app.icon?.let { views.setViewVisibility(R.id.folder_widget_item_icon, 0) }
++            app.icon?.let { views.setImageViewBitmap(R.id.folder_widget_item_icon, it) }
++
++            val fillInIntent = Intent().putExtra(
++                FolderWidgetData.EXTRA_COMPONENT, app.component.flattenToString())
++            views.setOnClickFillInIntent(R.id.folder_widget_item, fillInIntent)
++        }
++        return views
++    }
++
++    override fun getLoadingView(): RemoteViews? = null
++
++    override fun getViewTypeCount(): Int = 1
++
++    override fun getItemId(position: Int): Long = position.toLong()
++
++    override fun hasStableIds(): Boolean = false
++}
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..9d38637 100644
+index 6d6af7f..5e847c0 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -208,6 +208,72 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +208,78 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -172,6 +1012,12 @@ index 6d6af7f..9d38637 100644
 +        onSet = { reloadHelper.recreate() },
 +    )
 +
++    val hideDrawerScrollbar = preference(
++        key = booleanPreferencesKey(name = "hide_drawer_scrollbar"),
++        defaultValue = false,
++        onSet = { reloadHelper.recreate() },
++    )
++
      val enableFuzzySearch = preference(
          key = booleanPreferencesKey(name = "enable_fuzzy_search"),
          defaultValue = context.resources.getBoolean(R.bool.config_default_enable_fuzzy_search),
@@ -223,7 +1069,7 @@ index dcb9334..6cc94ab 100644
  @Suppress("MemberVisibilityCanBePrivate", "unused")
  object ColorTokens {
 @@ -60,6 +61,10 @@ object ColorTokens {
-     @JvmField val FocusHighlight = DayNightColorToken(Neutral1_0, Neutral1_700)
+     @JvmField val FocusHighlight = DayNightColorToken(Neutral2_500.setLStar(87.0), Neutral1_800)
      @JvmField val GroupHighlight = Surface
      @JvmField val OverviewScrim = DayNightColorToken(Neutral2_500.setLStar(87.0), Neutral1_800)
 +        .withPreferences { prefs ->
@@ -234,10 +1080,10 @@ index dcb9334..6cc94ab 100644
  
      @JvmField val FolderDotColor = Accent2_50
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
-index 3820d3b..a1e31ce 100644
+index 3820d3b..7c98666 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
-@@ -127,6 +127,20 @@ fun AppDrawerPreferences() {
+@@ -127,6 +127,26 @@ fun AppDrawerPreferences() {
                  showAsPercentage = true
              )
          }
@@ -255,9 +1101,191 @@ index 3820d3b..a1e31ce 100644
 +                valueRange = -48..48,
 +            )
 +        }
++        PreferenceGroup(heading = stringResource(id = R.string.misc_label)) {
++            SwitchPreference(
++                adapter = prefs2.hideDrawerScrollbar.getAdapter(),
++                label = stringResource(id = R.string.hide_drawer_scrollbar),
++            )
++        }
          PreferenceGroup(heading = stringResource(id = R.string.icons)) {
              SliderPreference(
                  label = stringResource(id = R.string.icon_size),
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/BackupPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/BackupPreferences.kt
+new file mode 100644
+index 0000000..32d562b
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/ui/preferences/BackupPreferences.kt
+@@ -0,0 +1,170 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.ui.preferences
++
++import android.net.Uri
++import android.widget.Toast
++import androidx.activity.compose.rememberLauncherForActivityResult
++import androidx.activity.result.contract.ActivityResultContracts
++import androidx.compose.animation.ExperimentalAnimationApi
++import androidx.compose.foundation.layout.Column
++import androidx.compose.foundation.layout.Spacer
++import androidx.compose.foundation.layout.fillMaxWidth
++import androidx.compose.foundation.layout.height
++import androidx.compose.foundation.layout.padding
++import androidx.compose.material3.AlertDialog
++import androidx.compose.material3.Button
++import androidx.compose.material3.Text
++import androidx.compose.material3.TextButton
++import androidx.compose.runtime.Composable
++import androidx.compose.runtime.mutableStateOf
++import androidx.compose.runtime.remember
++import androidx.compose.runtime.rememberCoroutineScope
++import androidx.compose.runtime.getValue
++import androidx.compose.runtime.setValue
++import androidx.compose.ui.Modifier
++import androidx.compose.ui.platform.LocalContext
++import androidx.compose.ui.res.stringResource
++import androidx.compose.ui.unit.dp
++import androidx.navigation.NavGraphBuilder
++import app.lawnchair.backup.BackupUtils
++import app.lawnchair.ui.preferences.components.GridOverridesPreview
++import app.lawnchair.ui.preferences.components.PreferenceGroup
++import app.lawnchair.ui.preferences.components.PreferenceLayout
++import app.lawnchair.ui.preferences.components.PreferenceTemplate
++import com.android.launcher3.R
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.withContext
++
++@OptIn(ExperimentalAnimationApi::class)
++fun NavGraphBuilder.backupGraph(route: String) {
++    preferenceGraph(route, { BackupPreferences() })
++}
++
++@OptIn(ExperimentalAnimationApi::class)
++@Composable
++fun BackupPreferences() {
++    val context = LocalContext.current
++    val scope = rememberCoroutineScope()
++    var pendingRestoreUri by remember { mutableStateOf<Uri?>(null) }
++
++    val backupLauncher = rememberLauncherForActivityResult(
++        ActivityResultContracts.CreateDocument()
++    ) { uri ->
++        if (uri != null) {
++            scope.launch {
++                val success = runSafely { BackupUtils.createBackup(context, uri) }
++                withContext(Dispatchers.Main) {
++                    Toast.makeText(
++                        context,
++                        context.getString(if (success) R.string.backup_created else R.string.backup_failed),
++                        Toast.LENGTH_SHORT
++                    ).show()
++                }
++            }
++        }
++    }
++
++    val restoreLauncher = rememberLauncherForActivityResult(
++        ActivityResultContracts.OpenDocument()
++    ) { uri ->
++        if (uri != null) {
++            pendingRestoreUri = uri
++        }
++    }
++
++    pendingRestoreUri?.let { uri ->
++        AlertDialog(
++            onDismissRequest = { pendingRestoreUri = null },
++            title = { Text(stringResource(id = R.string.restore_confirm_title)) },
++            text = { Text(stringResource(id = R.string.restore_confirm_message)) },
++            confirmButton = {
++                TextButton(onClick = {
++                    pendingRestoreUri = null
++                    scope.launch {
++                        val success = runSafely { BackupUtils.restoreBackup(context, uri) }
++                        withContext(Dispatchers.Main) {
++                            Toast.makeText(
++                                context,
++                                context.getString(if (success) R.string.restore_done else R.string.restore_failed),
++                                Toast.LENGTH_SHORT
++                            ).show()
++                        }
++                    }
++                }) {
++                    Text(stringResource(id = R.string.restore_button))
++                }
++            },
++            dismissButton = {
++                TextButton(onClick = { pendingRestoreUri = null }) {
++                    Text(stringResource(id = android.R.string.cancel))
++                }
++            }
++        )
++    }
++
++    PreferenceLayout(label = stringResource(id = R.string.backup_restore_label)) {
++        PreferenceGroup(isFirstChild = true) {
++            GridOverridesPreview(
++                modifier = Modifier
++                    .fillMaxWidth()
++                    .padding(horizontal = 16.dp, vertical = 8.dp),
++                updateGridOptions = {}
++            )
++        }
++        PreferenceGroup {
++            PreferenceTemplate(
++                title = { Text(stringResource(id = R.string.backup_info)) }
++            )
++        }
++        PreferenceGroup {
++            Column {
++                Button(
++                    onClick = { backupLauncher.launch(BackupUtils.suggestedFileName()) },
++                    modifier = Modifier
++                        .fillMaxWidth()
++                        .padding(horizontal = 16.dp, vertical = 4.dp),
++                ) {
++                    Text(stringResource(id = R.string.backup_button))
++                }
++                Spacer(modifier = Modifier.height(4.dp))
++                Button(
++                    onClick = {
++                        restoreLauncher.launch(
++                            arrayOf("application/zip", "application/octet-stream", "*/*")
++                        )
++                    },
++                    modifier = Modifier
++                        .fillMaxWidth()
++                        .padding(horizontal = 16.dp, vertical = 4.dp),
++                ) {
++                    Text(stringResource(id = R.string.restore_button))
++                }
++            }
++        }
++    }
++}
++
++private inline fun runSafely(block: () -> Unit): Boolean {
++    return try {
++        block()
++        true
++    } catch (t: Throwable) {
++        false
++    }
++}
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 index 703cc2f..72de5c9 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
@@ -355,6 +1383,44 @@ index 547a84f..b4df38b 100644
                  SwitchPreference(
                      adapter = prefs2.roundedWidgets.getAdapter(),
                      label = stringResource(id = R.string.force_rounded_widgets),
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
+index 330e77f..fdd8d82 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
+@@ -42,6 +42,7 @@ object Routes {
+     const val HOME_SCREEN: String = "homeScreen"
+     const val DOCK: String = "dock"
+     const val APP_DRAWER: String = "appDrawer"
++    const val BACKUP: String = "backup"
+     const val FOLDERS: String = "folders"
+     const val QUICKSTEP: String = "quickstep"
+     const val FONT_SELECTION: String = "fontSelection"
+@@ -88,6 +89,7 @@ fun Preferences(interactor: PreferenceInteractor = viewModel<PreferenceViewModel
+                         homeScreenGraph(route = subRoute(Routes.HOME_SCREEN))
+                         dockGraph(route = subRoute(Routes.DOCK))
+                         appDrawerGraph(route = subRoute(Routes.APP_DRAWER))
++                        backupGraph(route = subRoute(Routes.BACKUP))
+                         folderGraph(route = subRoute(Routes.FOLDERS))
+                         quickstepGraph(route = subRoute(Routes.QUICKSTEP))
+                         aboutGraph(route = subRoute(Routes.ABOUT))
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt b/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
+index 734821f..05de1a3 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
+@@ -70,6 +70,13 @@ fun PreferencesDashboard() {
+             route = Routes.FOLDERS
+         )
+ 
++        PreferenceCategory(
++            label = stringResource(R.string.backup_restore_label),
++            description = stringResource(R.string.backup_restore_description),
++            iconResource = R.drawable.ic_backup,
++            route = Routes.BACKUP
++        )
++
+         if (LawnchairApp.isRecentsEnabled || BuildConfig.DEBUG) {
+             PreferenceCategory(
+                 label = stringResource(id = R.string.quickstep_label),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
 index 958111b..a3dcff5 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
@@ -614,6 +1680,98 @@ index 3048ff8..4b9c215 100644
              iconAlphaStart = hasSplashScreen && !hasDifferentAppIcon ? 0 : 1f;
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
+diff --git a/res/layout/folder_widget.xml b/res/layout/folder_widget.xml
+new file mode 100644
+index 0000000..f21940d
+--- /dev/null
++++ b/res/layout/folder_widget.xml
+@@ -0,0 +1,38 @@
++<?xml version="1.0" encoding="utf-8"?>
++<FrameLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:id="@+id/folder_widget_root"
++    android:layout_width="match_parent"
++    android:layout_height="match_parent">
++
++    <LinearLayout
++        android:layout_width="match_parent"
++        android:layout_height="match_parent"
++        android:orientation="vertical"
++        android:padding="8dp">
++
++        <TextView
++            android:id="@+id/folder_widget_title"
++            android:layout_width="match_parent"
++            android:layout_height="wrap_content"
++            android:paddingStart="8dp"
++            android:paddingEnd="8dp"
++            android:paddingTop="4dp"
++            android:paddingBottom="4dp"
++            android:textSize="14sp"
++            android:textStyle="bold"
++            android:singleLine="true"
++            android:ellipsize="end" />
++
++        <GridView
++            android:id="@+id/folder_widget_grid"
++            android:layout_width="match_parent"
++            android:layout_height="match_parent"
++            android:numColumns="4"
++            android:horizontalSpacing="4dp"
++            android:verticalSpacing="4dp"
++            android:gravity="center"
++            android:scrollbars="none" />
++
++    </LinearLayout>
++</FrameLayout>
+diff --git a/res/layout/folder_widget_item.xml b/res/layout/folder_widget_item.xml
+new file mode 100644
+index 0000000..45f160b
+--- /dev/null
++++ b/res/layout/folder_widget_item.xml
+@@ -0,0 +1,26 @@
++<?xml version="1.0" encoding="utf-8"?>
++<LinearLayout
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:id="@+id/folder_widget_item"
++    android:layout_width="match_parent"
++    android:layout_height="wrap_content"
++    android:orientation="vertical"
++    android:gravity="center_horizontal"
++    android:padding="4dp">
++
++    <ImageView
++        android:id="@+id/folder_widget_item_icon"
++        android:layout_width="44dp"
++        android:layout_height="44dp" />
++
++    <TextView
++        android:id="@+id/folder_widget_item_label"
++        android:layout_width="match_parent"
++        android:layout_height="wrap_content"
++        android:layout_marginTop="2dp"
++        android:textSize="10sp"
++        android:singleLine="true"
++        android:ellipsize="end"
++        android:gravity="center" />
++
++</LinearLayout>
+diff --git a/res/xml/folder_widget_info.xml b/res/xml/folder_widget_info.xml
+new file mode 100644
+index 0000000..0c6f100
+--- /dev/null
++++ b/res/xml/folder_widget_info.xml
+@@ -0,0 +1,10 @@
++<?xml version="1.0" encoding="utf-8"?>
++<appwidget-provider
++    xmlns:android="http://schemas.android.com/apk/res/android"
++    android:minWidth="180dp"
++    android:minHeight="110dp"
++    android:updatePeriodMillis="1800000"
++    android:initialLayout="@layout/folder_widget"
++    android:configure="app.lawnchair.folderwidget.FolderWidgetConfigActivity"
++    android:resizeMode="horizontal|vertical"
++    android:widgetCategory="home_screen" />
 diff --git a/src/com/android/launcher3/BaseDraggingActivity.java b/src/com/android/launcher3/BaseDraggingActivity.java
 index 73ad802..7ba2822 100644
 --- a/src/com/android/launcher3/BaseDraggingActivity.java
@@ -697,7 +1855,7 @@ index e24ee43..7264f53 100644
 @@ -2900,6 +2912,6 @@ public class CellLayout extends ViewGroup {
      }
  
-     public boolean isRegionVacant(int x, int y, int spanX, int spanY) {
+     public boolean isRegionVacant(int x, int y, spanX, spanY) {
 -        return mOccupied.isRegionVacant(x, y, spanX, spanY);
 +        return mOccupied.isRegionVacant(x, y, spanX, spanY) || PreferenceExtensionsKt.firstBlocking(mPreferenceManager2.getAllowWidgetOverlap());
      }
@@ -780,8 +1938,20 @@ index d5c71af..e86773e 100644
      }
  
      /**
+diff --git a/src/com/android/launcher3/Launcher.java b/src/com/android/launcher3/Launcher.java
+index b8cb812..d4d35bd 100644
+--- a/src/com/android/launcher3/Launcher.java
++++ b/src/com/android/launcher3/Launcher.java
+@@ -938,6 +938,7 @@ public class Launcher extends StatefulActivity<LauncherState> implements Launche
+         }
+ 
+         mAppWidgetHost.setActivityStarted(true);
++        app.lawnchair.folderwidget.FolderWidgetProvider.updateAll(this);
+         TraceHelper.INSTANCE.endSection(traceToken);
+     }
+ 
 diff --git a/src/com/android/launcher3/allapps/AllAppsContainerView.java b/src/com/android/launcher3/allapps/AllAppsContainerView.java
-index a7c75ad..e27fd09 100644
+index a7c75ad..d70ed8f 100644
 --- a/src/com/android/launcher3/allapps/AllAppsContainerView.java
 +++ b/src/com/android/launcher3/allapps/AllAppsContainerView.java
 @@ -72,12 +72,14 @@ import com.android.launcher3.keyboard.FocusedItemDecorator;
@@ -821,7 +1991,22 @@ index a7c75ad..e27fd09 100644
          mScrimColor = ColorTokens.AllAppsScrimColor.resolveColor(context);
          mHeaderThreshold = getResources().getDimensionPixelSize(
                  R.dimen.dynamic_grid_cell_border_spacing);
-@@ -405,8 +415,8 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+@@ -375,6 +385,14 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+             }
+         });
+ 
++        if (PreferenceExtensionsKt.firstBlocking(
++                PreferenceManager2.getInstance(getContext()).getHideDrawerScrollbar())) {
++            View scroller = findViewById(R.id.fast_scroller);
++            if (scroller != null) scroller.setVisibility(GONE);
++            View popup = findViewById(R.id.fast_scroller_popup);
++            if (popup != null) popup.setVisibility(GONE);
++        }
++
+         mHeader = findViewById(R.id.all_apps_header);
+         rebindAdapters(mUsingTabs, true /* force */);
+ 
+@@ -405,8 +423,8 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
                  + grid.cellLayoutPaddingLeftRightPx;
  
          for (int i = 0; i < mAH.length; i++) {
@@ -832,7 +2017,7 @@ index a7c75ad..e27fd09 100644
              mAH[i].applyPadding();
          }
  
-@@ -621,7 +631,7 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
+@@ -621,7 +639,7 @@ public class AllAppsContainerView extends StretchRecyclerViewContainer implement
  
          int padding = mHeader.getMaxTranslation();
          for (int i = 0; i < mAH.length; i++) {
@@ -841,6 +2026,22 @@ index a7c75ad..e27fd09 100644
              mAH[i].applyPadding();
          }
          mHeaderTop = mHeader.getTop();
+diff --git a/src/com/android/launcher3/folder/Folder.java b/src/com/android/launcher3/folder/Folder.java
+index 7dccc62..252394f 100644
+--- a/src/com/android/launcher3/folder/Folder.java
++++ b/src/com/android/launcher3/folder/Folder.java
+@@ -872,6 +872,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
+         clearDragInfo();
+         mState = STATE_SMALL;
+         mContent.setCurrentPage(0);
++
++        // Refresh any Material You folder widgets showing this folder's contents.
++        if (mInfo != null) {
++            app.lawnchair.folderwidget.FolderWidgetProvider.updateAll(getContext());
++        }
+     }
+ 
+     @Override
 diff --git a/src/com/android/launcher3/model/LoaderCursor.java b/src/com/android/launcher3/model/LoaderCursor.java
 index 93f824f..0d001b5 100644
 --- a/src/com/android/launcher3/model/LoaderCursor.java
