@@ -395,7 +395,7 @@ index 0000000..aa877b4
 +}
 diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
 new file mode 100644
-index 0000000..0bf0ede
+index 0000000..b18b215
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
 @@ -0,0 +1,125 @@
@@ -420,8 +420,8 @@ index 0000000..0bf0ede
 +import android.appwidget.AppWidgetManager
 +import android.content.Intent
 +import android.os.Bundle
++import androidx.activity.ComponentActivity
 +import androidx.activity.compose.setContent
-+import androidx.appcompat.app.AppCompatActivity
 +import androidx.compose.foundation.clickable
 +import androidx.compose.foundation.layout.Box
 +import androidx.compose.foundation.layout.Column
@@ -449,7 +449,7 @@ index 0000000..0bf0ede
 + * Configuration screen shown when the folder widget is added.
 + * Lets the user pick which folder (or all apps) the widget shows.
 + */
-+class FolderWidgetConfigActivity : AppCompatActivity() {
++class FolderWidgetConfigActivity : ComponentActivity() {
 +
 +    private var appWidgetId = -1
 +
