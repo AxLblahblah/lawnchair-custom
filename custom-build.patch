@@ -1985,7 +1985,7 @@ index e75d751..4187b05 100644
              TaskShortcutFactory.PIN,
              TaskShortcutFactory.INSTALL,
 diff --git a/quickstep/src/com/android/quickstep/TaskShortcutFactory.java b/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
-index a0fcfe9..b758a34 100644
+index a0fcfe9..b2bbade 100644
 --- a/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
 +++ b/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
 @@ -30,6 +30,7 @@ import android.graphics.Rect;
@@ -2005,7 +2005,7 @@ index a0fcfe9..b758a34 100644
      abstract class MultiWindowFactory implements TaskShortcutFactory {
  
          private final int mIconRes;
-@@ -321,6 +324,41 @@ public interface TaskShortcutFactory {
+@@ -321,6 +324,42 @@ public interface TaskShortcutFactory {
          }
      }
  
@@ -2032,11 +2032,12 @@ index a0fcfe9..b758a34 100644
 +                } catch (Throwable t) {
 +                    success = false;
 +                }
-+                final int messageRes = success
++                final boolean forceStopped = success;
++                final int messageRes = forceStopped
 +                        ? R.string.force_stop_done : R.string.force_stop_no_root;
 +                new Handler(Looper.getMainLooper()).post(() -> {
 +                    Toast.makeText(activity, messageRes, Toast.LENGTH_SHORT).show();
-+                    if (success && mTaskView.isAttachedToWindow()) {
++                    if (forceStopped && mTaskView.isAttachedToWindow()) {
 +                        mTaskView.getRecentsView().dismissTask(mTaskView, true, true);
 +                    }
 +                });
