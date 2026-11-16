@@ -141,7 +141,7 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..5f63c41 100644
+index 1d81cd7..b321710 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
 @@ -33,6 +33,34 @@
@@ -179,7 +179,15 @@ index 1d81cd7..5f63c41 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -209,6 +237,14 @@
+@@ -49,6 +77,7 @@
+     <string name="icon_size">Icon Size</string>
+     <string name="label_size">Label Size</string>
+     <string name="show_home_labels">Show Labels</string>
++    <string name="show_folder_labels">Show Labels in Folders</string>
+     <string name="notification_dots">Notification Dots</string>
+     <string name="smartspace_preferences">Preferences</string>
+     <string name="about_label">About</string>
+@@ -209,6 +238,14 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -194,6 +202,37 @@ index 1d81cd7..5f63c41 100644
      <string name="pick_icon_from_label">Pick Icon From</string>
      <string name="experimental_features_label">Experimental Features</string>
      <string name="icon_picker_label">Per-App Icon Customization</string>
+diff --git a/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt b/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt
+index 931ecd0..14583eb 100644
+--- a/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt
++++ b/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt
+@@ -30,6 +30,7 @@ class DeviceProfileOverrides(context: Context) {
+         var iconSizeFactor: Float,
+         var enableIconText: Boolean,
+         var iconTextSizeFactor: Float,
++        var enableFolderIconText: Boolean,
+ 
+         var allAppsIconSizeFactor: Float,
+         var enableAllAppsIconText: Boolean,
+@@ -53,6 +54,7 @@ class DeviceProfileOverrides(context: Context) {
+             iconSizeFactor = preferenceManager2.homeIconSizeFactor.firstBlocking(),
+             enableIconText = preferenceManager2.showIconLabelsOnHomeScreen.firstBlocking(),
+             iconTextSizeFactor = preferenceManager2.homeIconLabelSizeFactor.firstBlocking(),
++            enableFolderIconText = preferenceManager2.showIconLabelsInFolders.firstBlocking(),
+ 
+             allAppsIconSizeFactor = preferenceManager2.drawerIconSizeFactor.firstBlocking(),
+             enableAllAppsIconText = preferenceManager2.showIconLabelsInDrawer.firstBlocking(),
+@@ -72,7 +74,10 @@ class DeviceProfileOverrides(context: Context) {
+ 
+             // apply icon and text size
+             idp.iconSize *= iconSizeFactor
++            val originalIconTextSize = idp.iconTextSize
+             idp.iconTextSize *= (if (enableIconText) iconTextSizeFactor else 0f)
++            idp.folderIconTextSize =
++                (if (enableFolderIconText) originalIconTextSize * iconTextSizeFactor else 0f)
+             idp.allAppsIconSize *= allAppsIconSizeFactor
+             idp.allAppsIconTextSize *= (if (enableAllAppsIconText) allAppsIconTextSizeFactor else 0f)
+ 
 diff --git a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
 index 3046dc6..0b3b213 100644
 --- a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
@@ -395,10 +434,10 @@ index 0000000..aa877b4
 +}
 diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
 new file mode 100644
-index 0000000..b18b215
+index 0000000..430e78a
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,127 @@
 +/*
 + * Copyright 2021, Lawnchair
 + *
@@ -422,6 +461,7 @@ index 0000000..b18b215
 +import android.os.Bundle
 +import androidx.activity.ComponentActivity
 +import androidx.activity.compose.setContent
++import androidx.compose.foundation.background
 +import androidx.compose.foundation.clickable
 +import androidx.compose.foundation.layout.Box
 +import androidx.compose.foundation.layout.Column
@@ -494,6 +534,7 @@ index 0000000..b18b215
 +    Column(
 +        modifier = Modifier
 +            .fillMaxSize()
++            .background(MaterialTheme.colorScheme.background)
 +            .verticalScroll(rememberScrollState())
 +    ) {
 +        Box(modifier = Modifier.padding(16.dp)) {
@@ -1097,10 +1138,23 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..fdf2402 100644
+index 6d6af7f..cd093d4 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -208,6 +208,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -178,6 +178,12 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+         onSet = { reloadHelper.reloadGrid() },
+     )
+ 
++    val showIconLabelsInFolders = preference(
++        key = booleanPreferencesKey(name = "show_icon_labels_in_folders"),
++        defaultValue = true,
++        onSet = { reloadHelper.reloadGrid() },
++    )
++
+     val drawerIconSizeFactor = preference(
+         key = floatPreferencesKey(name = "drawer_icon_size_factor"),
+         defaultValue = resourceProvider.getFloat(R.dimen.config_default_drawer_icon_size_factor),
+@@ -208,6 +214,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -1584,7 +1638,7 @@ index f60565f..35467f5 100644
              ThemePreference()
              AccentColorPreference()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-index 547a84f..dcf3a7f 100644
+index 547a84f..cdfec28 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 @@ -62,6 +62,10 @@ fun HomeScreenPreferences() {
@@ -1619,7 +1673,18 @@ index 547a84f..dcf3a7f 100644
          PreferenceGroup(heading = stringResource(id = R.string.status_bar_label)) {
              val showStatusBarAdapter = prefs2.showStatusBar.getAdapter()
              SwitchPreference(
-@@ -131,8 +149,12 @@ fun HomeScreenPreferences() {
+@@ -117,6 +135,10 @@ fun HomeScreenPreferences() {
+                 adapter = homeScreenLabelsAdapter,
+                 label = stringResource(id = R.string.show_home_labels),
+             )
++            SwitchPreference(
++                adapter = prefs2.showIconLabelsInFolders.getAdapter(),
++                label = stringResource(id = R.string.show_folder_labels),
++            )
+             AnimatedVisibility(
+                 visible = homeScreenLabelsAdapter.state.value,
+                 enter = expandVertically() + fadeIn(),
+@@ -131,8 +153,12 @@ fun HomeScreenPreferences() {
                  )
              }
          }
@@ -1972,6 +2037,70 @@ index 3048ff8..4b9c215 100644
              iconAlphaStart = hasSplashScreen && !hasDifferentAppIcon ? 0 : 1f;
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
+diff --git a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
+index 19cad53..6944d0f 100644
+--- a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
++++ b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
+@@ -24,6 +24,7 @@ import static com.android.launcher3.Utilities.mapBoundToRange;
+ import static com.android.launcher3.anim.Interpolators.EXAGGERATED_EASE;
+ import static com.android.launcher3.anim.Interpolators.LINEAR;
+ import static com.android.launcher3.config.FeatureFlags.PROTOTYPE_APP_CLOSE;
++import static com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION;
+ import static com.android.launcher3.model.data.ItemInfo.NO_MATCHING_ID;
+ import static com.android.launcher3.views.FloatingIconView.SHAPE_PROGRESS_DURATION;
+ import static com.android.launcher3.views.FloatingIconView.getFloatingIconView;
+@@ -39,6 +40,7 @@ import android.graphics.Rect;
+ import android.graphics.RectF;
+ import android.os.IBinder;
+ import android.os.UserHandle;
++import android.text.TextUtils;
+ import android.util.Size;
+ import android.view.View;
+ 
+@@ -53,6 +55,8 @@ import com.android.launcher3.Workspace;
+ import com.android.launcher3.anim.AnimatorPlaybackController;
+ import com.android.launcher3.anim.SpringAnimationBuilder;
+ import com.android.launcher3.dragndrop.DragLayer;
++import com.android.launcher3.folder.FolderInfo;
++import com.android.launcher3.model.data.WorkspaceItemInfo;
+ import com.android.launcher3.states.StateAnimationConfig;
+ import com.android.launcher3.util.DynamicResource;
+ import com.android.launcher3.util.ObjectWrapper;
+@@ -267,9 +271,31 @@ public class LauncherSwipeHandlerV2 extends
+             }
+         }
+ 
+-        return mActivity.getWorkspace().getFirstMatchForAppClose(launchCookieItemId,
+-                runningTaskView.getTask().key.getComponent().getPackageName(),
+-                UserHandle.of(runningTaskView.getTask().key.userId));
++        String packageName = runningTaskView.getTask().key.getComponent().getPackageName();
++        UserHandle user = UserHandle.of(runningTaskView.getTask().key.userId);
++        View view = mActivity.getWorkspace().getFirstMatchForAppClose(launchCookieItemId,
++                packageName, user);
++        if (view == null) {
++            view = mActivity.getWorkspace().getFirstMatch((info, v) -> {
++                if (!(info instanceof FolderInfo)) {
++                    return false;
++                }
++                FolderInfo folderInfo = (FolderInfo) info;
++                for (WorkspaceItemInfo shortcutInfo : folderInfo.contents) {
++                    if (shortcutInfo != null
++                            && shortcutInfo.itemType == ITEM_TYPE_APPLICATION
++                            && shortcutInfo.user.equals(user)
++                            && shortcutInfo.getTargetComponent() != null
++                            && TextUtils.equals(
++                                    shortcutInfo.getTargetComponent().getPackageName(),
++                                    packageName)) {
++                        return true;
++                    }
++                }
++                return false;
++            });
++        }
++        return view;
+     }
+ 
+     @Override
 diff --git a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
 index e75d751..4187b05 100644
 --- a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
@@ -2314,7 +2443,7 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..6d1e9d7 100644
+index 720f3d8..b6b0008 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
 @@ -72,6 +72,10 @@ public class DeviceProfile {
@@ -2365,7 +2494,18 @@ index 720f3d8..6d1e9d7 100644
      }
  
      private void setCellLayoutBorderSpacing(int borderSpacing) {
-@@ -813,6 +833,10 @@ public class DeviceProfile {
+@@ -700,7 +720,9 @@ public class DeviceProfile {
+     private void updateFolderCellSize(float scale, Resources res) {
+         float invIconSizeDp = isVerticalBarLayout() ? inv.landscapeIconSize : inv.iconSize;
+         folderChildIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, scale));
+-        folderChildTextSizePx = pxFromSp(inv.iconTextSize, mMetrics, scale);
++        float folderTextSizeSp =
++                inv.folderIconTextSize >= 0f ? inv.folderIconTextSize : inv.iconTextSize;
++        folderChildTextSizePx = pxFromSp(folderTextSizeSp, mMetrics, scale);
+         folderLabelTextSizePx = (int) (folderChildTextSizePx * folderLabelTextScale);
+ 
+         int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
+@@ -813,6 +835,10 @@ public class DeviceProfile {
                          paddingBottom);
              }
          }
@@ -2391,6 +2531,26 @@ index d5c71af..e86773e 100644
      }
  
      /**
+diff --git a/src/com/android/launcher3/InvariantDeviceProfile.java b/src/com/android/launcher3/InvariantDeviceProfile.java
+index fad3617..d6a481f 100644
+--- a/src/com/android/launcher3/InvariantDeviceProfile.java
++++ b/src/com/android/launcher3/InvariantDeviceProfile.java
+@@ -108,6 +108,7 @@ public class InvariantDeviceProfile {
+     public int iconBitmapSize;
+     public int fillResIconDpi;
+     public float iconTextSize;
++    public float folderIconTextSize = -1f;
+     public float allAppsIconSize;
+     public float allAppsIconTextSize;
+ 
+@@ -169,6 +170,7 @@ public class InvariantDeviceProfile {
+         landscapeIconSize = p.landscapeIconSize;
+         iconBitmapSize = p.iconBitmapSize;
+         iconTextSize = p.iconTextSize;
++        folderIconTextSize = p.folderIconTextSize;
+         landscapeIconTextSize = p.landscapeIconTextSize;
+         numShownHotseatIcons = p.numShownHotseatIcons;
+         numDatabaseHotseatIcons = p.numDatabaseHotseatIcons;
 diff --git a/src/com/android/launcher3/Launcher.java b/src/com/android/launcher3/Launcher.java
 index b8cb812..d4d35bd 100644
 --- a/src/com/android/launcher3/Launcher.java
@@ -2480,10 +2640,22 @@ index a7c75ad..d70ed8f 100644
          }
          mHeaderTop = mHeader.getTop();
 diff --git a/src/com/android/launcher3/folder/Folder.java b/src/com/android/launcher3/folder/Folder.java
-index 7dccc62..252394f 100644
+index 7dccc62..9c4878f 100644
 --- a/src/com/android/launcher3/folder/Folder.java
 +++ b/src/com/android/launcher3/folder/Folder.java
-@@ -872,6 +872,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
+@@ -301,7 +301,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
+         }
+ 
+         mFooter = findViewById(R.id.folder_footer);
+-        mFooterHeight = getResources().getDimensionPixelSize(R.dimen.folder_label_height);
++        boolean folderLabelsEnabled = dp.inv.folderIconTextSize != 0f;
++        mFooterHeight = folderLabelsEnabled
++                ? getResources().getDimensionPixelSize(R.dimen.folder_label_height) : 0;
++        mFooter.setVisibility(folderLabelsEnabled ? View.VISIBLE : View.GONE);
+ 
+         if (Utilities.ATLEAST_R) {
+             mKeyboardInsetAnimationCallback = new KeyboardInsetAnimationCallback(this);
+@@ -872,6 +875,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
          clearDragInfo();
          mState = STATE_SMALL;
          mContent.setCurrentPage(0);
@@ -2495,6 +2667,31 @@ index 7dccc62..252394f 100644
      }
  
      @Override
+diff --git a/src/com/android/launcher3/folder/FolderIcon.java b/src/com/android/launcher3/folder/FolderIcon.java
+index d9f7bfa..3c129b9 100644
+--- a/src/com/android/launcher3/folder/FolderIcon.java
++++ b/src/com/android/launcher3/folder/FolderIcon.java
+@@ -37,6 +37,7 @@ import android.util.AttributeSet;
+ import android.util.Property;
+ import android.view.LayoutInflater;
+ import android.view.MotionEvent;
++import android.util.TypedValue;
+ import android.view.View;
+ import android.view.ViewDebug;
+ import android.view.ViewGroup;
+@@ -204,6 +205,12 @@ public class FolderIcon extends FrameLayout implements FolderListener, IconLabel
+         icon.mFolderName.setCompoundDrawablePadding(0);
+         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) icon.mFolderName.getLayoutParams();
+         lp.topMargin = grid.iconSizePx + grid.iconDrawablePaddingPx;
++        if (grid.inv.folderIconTextSize == 0f) {
++            icon.mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX, 0);
++        } else if (grid.iconTextSizePx == 0) {
++            icon.mFolderName.setTextSize(TypedValue.COMPLEX_UNIT_PX,
++                    Math.max(1, grid.folderChildTextSizePx));
++        }
+ 
+         icon.setTag(folderInfo);
+         icon.setOnClickListener(ItemClickHandler.INSTANCE);
 diff --git a/src/com/android/launcher3/model/LoaderCursor.java b/src/com/android/launcher3/model/LoaderCursor.java
 index 93f824f..0d001b5 100644
 --- a/src/com/android/launcher3/model/LoaderCursor.java
@@ -2537,7 +2734,7 @@ index 93f824f..0d001b5 100644
              return true;
          } else {
 diff --git a/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java b/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
-index f73d782..4f17f4f 100644
+index f73d782..0d70e4e 100644
 --- a/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
 +++ b/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
 @@ -26,6 +26,9 @@ import com.android.launcher3.R;
@@ -2550,18 +2747,45 @@ index f73d782..4f17f4f 100644
  /**
   * A PageIndicator that briefly shows a fraction of a line when moving between pages
   *
-@@ -126,6 +129,11 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
+@@ -105,6 +108,9 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
+ 
+     private Runnable mHideLineRunnable = () -> animateLineToAlpha(0);
+ 
++    private boolean mHiddenByPref = false;
++    private boolean mPrefCheckedInDraw = false;
++
+     public WorkspacePageIndicator(Context context) {
+         this(context, null);
+     }
+@@ -126,10 +132,28 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
          boolean darkText = Themes.getAttrBoolean(mLauncher, R.attr.isWorkspaceDarkText);
          mActiveAlpha = darkText ? BLACK_ALPHA : WHITE_ALPHA;
          mLinePaint.setColor(darkText ? Color.BLACK : Color.WHITE);
 +
 +        if (PreferenceExtensionsKt.firstBlocking(
 +                PreferenceManager2.getInstance(context).getHidePageIndicator())) {
++            mHiddenByPref = true;
 +            setVisibility(GONE);
 +        }
      }
  
      @Override
+     protected void onDraw(Canvas canvas) {
++        if (!mPrefCheckedInDraw) {
++            mPrefCheckedInDraw = true;
++            if (!mHiddenByPref && PreferenceExtensionsKt.firstBlocking(
++                    PreferenceManager2.getInstance(getContext()).getHidePageIndicator())) {
++                mHiddenByPref = true;
++                setVisibility(GONE);
++                return;
++            }
++        }
++        if (mHiddenByPref) {
++            return;
++        }
+         if (mTotalScroll == 0 || mNumPagesFloat == 0) {
+             return;
+         }
 diff --git a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java b/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
 index d77d99d..846a6ad 100644
 --- a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
