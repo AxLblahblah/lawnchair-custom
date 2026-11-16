@@ -141,7 +141,7 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..6d85493 100644
+index 1d81cd7..29f9f6f 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
 @@ -33,6 +33,34 @@
@@ -179,16 +179,17 @@ index 1d81cd7..6d85493 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -49,6 +77,8 @@
+@@ -49,6 +77,9 @@
      <string name="icon_size">Icon Size</string>
      <string name="label_size">Label Size</string>
      <string name="show_home_labels">Show Labels</string>
 +    <string name="show_folder_labels">Show Labels in Folders</string>
 +    <string name="folder_footer_height">Folder Bottom Spacing</string>
++    <string name="fine_position_label">Fine Position</string>
      <string name="notification_dots">Notification Dots</string>
      <string name="smartspace_preferences">Preferences</string>
      <string name="about_label">About</string>
-@@ -209,6 +239,14 @@
+@@ -209,6 +240,14 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -235,15 +236,18 @@ index 931ecd0..14583eb 100644
              idp.allAppsIconTextSize *= (if (enableAllAppsIconText) allAppsIconTextSizeFactor else 0f)
  
 diff --git a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
-index 3046dc6..0b3b213 100644
+index 3046dc6..39ad5ed 100644
 --- a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
 +++ b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
-@@ -249,7 +249,7 @@ class LawnchairLauncher : QuickstepLauncher(), LifecycleOwner,
+@@ -249,7 +249,10 @@ class LawnchairLauncher : QuickstepLauncher(), LifecycleOwner,
      override fun getSupportedShortcuts(): Stream<SystemShortcut.Factory<*>> {
          return Stream.concat(
              super.getSupportedShortcuts(),
 -            Stream.of(LawnchairShortcut.CUSTOMIZE)
-+            Stream.of(LawnchairShortcut.CUSTOMIZE, LawnchairShortcut.FORCE_STOP)
++            Stream.of(
++                LawnchairShortcut.CUSTOMIZE, LawnchairShortcut.FORCE_STOP,
++                LawnchairShortcut.FINE_POSITION
++            )
          )
      }
  
@@ -1141,7 +1145,7 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..3d51011 100644
+index 6d6af7f..a33527f 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 @@ -178,6 +178,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
@@ -1157,7 +1161,7 @@ index 6d6af7f..3d51011 100644
 +    val folderFooterHeightFactor = preference(
 +        key = floatPreferencesKey(name = "folder_footer_height_factor"),
 +        defaultValue = 1f,
-+        onSet = { reloadHelper.reloadGrid() },
++        onSet = { reloadHelper.recreate() },
 +    )
 +
      val drawerIconSizeFactor = preference(
@@ -1318,8 +1322,207 @@ index dcb9334..6cc94ab 100644
      @JvmField val SearchboxHighlight = DayNightColorToken(SurfaceVariantLight, Neutral1_800)
  
      @JvmField val FolderDotColor = Accent2_50
+diff --git a/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
+new file mode 100644
+index 0000000..370cc19
+--- /dev/null
++++ b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
+@@ -0,0 +1,193 @@
++/*
++ * Copyright 2021, Lawnchair
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package app.lawnchair.ui.popup
++
++import android.annotation.SuppressLint
++import android.graphics.drawable.GradientDrawable
++import android.view.Gravity
++import android.view.View
++import android.widget.FrameLayout
++import android.widget.LinearLayout
++import android.widget.TextView
++import app.lawnchair.LawnchairLauncher
++import app.lawnchair.theme.color.ColorTokens
++import com.android.launcher3.CellLayout
++import com.android.launcher3.model.data.ItemInfo
++import com.android.launcher3.util.Themes
++
++@SuppressLint("ClickableViewAccessibility")
++class FinePositioningController private constructor(
++    private val launcher: LawnchairLauncher,
++    private val view: View,
++    private val info: ItemInfo
++) : FrameLayout(launcher) {
++
++    private val cellLayout: CellLayout = view.parent.parent as CellLayout
++    private val origCellX = info.cellX
++    private val origCellY = info.cellY
++    private val origSpanX = info.spanX
++    private val origSpanY = info.spanY
++    private val textColor = Themes.getAttrColor(context, android.R.attr.textColorPrimary)
++
++    init {
++        isClickable = true
++        isFocusable = true
++        addView(buildPanel(), generateDefaultLayoutParams())
++    }
++
++    private fun button(text: String, onClick: () -> Unit): TextView {
++        val density = resources.displayMetrics.density
++        return TextView(context).apply {
++            this.text = text
++            textSize = 20f
++            setTypeface(typeface, android.graphics.Typeface.BOLD)
++            gravity = Gravity.CENTER
++            setTextColor(textColor)
++            setOnClickListener { onClick() }
++            layoutParams = LinearLayout.LayoutParams(
++                (64 * density).toInt(), (52 * density).toInt()
++            )
++        }
++    }
++
++    private fun row(vararg buttons: TextView): LinearLayout {
++        return LinearLayout(context).apply {
++            orientation = LinearLayout.HORIZONTAL
++            gravity = Gravity.CENTER
++            for (button in buttons) {
++                addView(button)
++            }
++        }
++    }
++
++    private fun buildPanel(): View {
++        val density = resources.displayMetrics.density
++        val background = GradientDrawable()
++        background.cornerRadius = 24f * density
++        background.setColor(ColorTokens.PopupColorPrimary.resolveColor(context))
++        return LinearLayout(context).apply {
++            orientation = LinearLayout.VERTICAL
++            gravity = Gravity.CENTER_HORIZONTAL
++            background = background
++            elevation = 8f * density
++            setPadding((12 * density).toInt(), (12 * density).toInt(),
++                (12 * density).toInt(), (12 * density).toInt())
++            addView(row(button("▲") { move(0, -1) }))
++            addView(row(
++                button("◀") { move(-1, 0) },
++                button("▼") { move(0, 1) },
++                button("▶") { move(1, 0) },
++            ))
++            addView(row(
++                button("−") { resize(false) },
++                button("+") { resize(true) },
++            ))
++            addView(row(
++                button("✓") { confirm() },
++                button("✕") { cancel() },
++            ))
++        }
++    }
++
++    private fun move(dx: Int, dy: Int) {
++        val lp = view.layoutParams as CellLayout.LayoutParams
++        val targetX = lp.cellX + dx
++        val targetY = lp.cellY + dy
++        if (targetX < 0 || targetY < 0 ||
++            targetX + lp.cellHSpan > cellLayout.countX ||
++            targetY + lp.cellVSpan > cellLayout.countY
++        ) {
++            return
++        }
++        cellLayout.markCellsAsUnoccupiedForView(view)
++        if (cellLayout.isRegionVacant(targetX, targetY, lp.cellHSpan, lp.cellVSpan)) {
++            lp.cellX = targetX
++            lp.cellY = targetY
++            info.cellX = targetX
++            info.cellY = targetY
++            cellLayout.requestLayout()
++        }
++        cellLayout.markCellsAsOccupiedForView(view)
++    }
++
++    private fun resize(grow: Boolean) {
++        val lp = view.layoutParams as CellLayout.LayoutParams
++        val current = maxOf(lp.cellHSpan, lp.cellVSpan)
++        val newSpan = if (grow) current + 1 else current - 1
++        if (newSpan < 1 || newSpan > cellLayout.countX || newSpan > cellLayout.countY) {
++            return
++        }
++        var targetX = lp.cellX
++        var targetY = lp.cellY
++        if (targetX + newSpan > cellLayout.countX) targetX = cellLayout.countX - newSpan
++        if (targetY + newSpan > cellLayout.countY) targetY = cellLayout.countY - newSpan
++        cellLayout.markCellsAsUnoccupiedForView(view)
++        if (grow && !cellLayout.isRegionVacant(targetX, targetY, newSpan, newSpan)) {
++            cellLayout.markCellsAsOccupiedForView(view)
++            return
++        }
++        lp.cellX = targetX
++        lp.cellY = targetY
++        lp.cellHSpan = newSpan
++        lp.cellVSpan = newSpan
++        info.cellX = targetX
++        info.cellY = targetY
++        info.spanX = newSpan
++        info.spanY = newSpan
++        cellLayout.markCellsAsOccupiedForView(view)
++        cellLayout.requestLayout()
++    }
++
++    private fun confirm() {
++        launcher.modelWriter.modifyItemInDatabase(
++            info, info.container, info.screenId, info.cellX, info.cellY, info.spanX, info.spanY
++        )
++        close()
++    }
++
++    private fun cancel() {
++        val lp = view.layoutParams as CellLayout.LayoutParams
++        cellLayout.markCellsAsUnoccupiedForView(view)
++        lp.cellX = origCellX
++        lp.cellY = origCellY
++        lp.cellHSpan = origSpanX
++        lp.cellVSpan = origSpanY
++        info.cellX = origCellX
++        info.cellY = origCellY
++        info.spanX = origSpanX
++        info.spanY = origSpanY
++        cellLayout.markCellsAsOccupiedForView(view)
++        cellLayout.requestLayout()
++        close()
++    }
++
++    private fun close() {
++        launcher.dragLayer.removeView(this)
++    }
++
++    companion object {
++        fun show(launcher: LawnchairLauncher, info: ItemInfo) {
++            val view = launcher.workspace.getFirstMatch { candidate, _ -> candidate === info }
++                ?: return
++            val overlay = FinePositioningController(launcher, view, info)
++            launcher.dragLayer.addView(
++                overlay,
++                FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
++            )
++        }
++    }
++}
 diff --git a/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt b/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
-index 83e4f7f..8f5c1ec 100644
+index 83e4f7f..424258c 100644
 --- a/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
 +++ b/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
 @@ -2,6 +2,7 @@ package app.lawnchair.ui.popup
@@ -1330,7 +1533,15 @@ index 83e4f7f..8f5c1ec 100644
  import androidx.compose.foundation.layout.PaddingValues
  import androidx.compose.material.ExperimentalMaterialApi
  import androidx.compose.ui.unit.dp
-@@ -16,6 +17,11 @@ import com.android.launcher3.icons.BitmapInfo
+@@ -9,6 +10,7 @@ import app.lawnchair.LawnchairLauncher
+ import app.lawnchair.override.CustomizeAppDialog
+ import app.lawnchair.views.ComposeBottomSheet
+ import com.android.launcher3.AbstractFloatingView
++import com.android.launcher3.LauncherSettings.Favorites.CONTAINER_DESKTOP
+ import com.android.launcher3.LauncherSettings.Favorites.ITEM_TYPE_APPLICATION
+ import com.android.launcher3.R
+ import com.android.launcher3.Utilities
+@@ -16,6 +18,11 @@ import com.android.launcher3.icons.BitmapInfo
  import com.android.launcher3.model.data.ItemInfo
  import com.android.launcher3.popup.SystemShortcut
  import com.android.launcher3.util.ComponentKey
@@ -1342,7 +1553,7 @@ index 83e4f7f..8f5c1ec 100644
  
  class LawnchairShortcut {
  
-@@ -23,6 +29,10 @@ class LawnchairShortcut {
+@@ -23,6 +30,14 @@ class LawnchairShortcut {
          val CUSTOMIZE = SystemShortcut.Factory<LawnchairLauncher> { activity, itemInfo ->
              if (itemInfo.itemType == ITEM_TYPE_APPLICATION) Customize(activity, itemInfo) else null
          }
@@ -1350,10 +1561,14 @@ index 83e4f7f..8f5c1ec 100644
 +        val FORCE_STOP = SystemShortcut.Factory<LawnchairLauncher> { activity, itemInfo ->
 +            if (itemInfo.targetComponent != null) ForceStop(activity, itemInfo) else null
 +        }
++
++        val FINE_POSITION = SystemShortcut.Factory<LawnchairLauncher> { activity, itemInfo ->
++            if (itemInfo.container == CONTAINER_DESKTOP) FinePosition(activity, itemInfo) else null
++        }
      }
  
      class Customize(
-@@ -56,4 +66,28 @@ class LawnchairShortcut {
+@@ -56,4 +71,39 @@ class LawnchairShortcut {
              }
          }
      }
@@ -1379,6 +1594,17 @@ index 83e4f7f..8f5c1ec 100644
 +                    Toast.makeText(launcher, message, Toast.LENGTH_SHORT).show()
 +                }
 +            }
++        }
++    }
++
++    class FinePosition(
++        private val launcher: LawnchairLauncher,
++        itemInfo: ItemInfo
++    ) : SystemShortcut<LawnchairLauncher>(R.drawable.ic_drag_handle, R.string.fine_position_label, launcher, itemInfo) {
++
++        override fun onClick(v: View) {
++            AbstractFloatingView.closeAllOpenViews(launcher)
++            FinePositioningController.show(launcher, mItemInfo)
 +        }
 +    }
  }
@@ -2578,6 +2804,50 @@ index b8cb812..d4d35bd 100644
 +        app.lawnchair.folderwidget.FolderWidgetProvider.updateAll(this);
          TraceHelper.INSTANCE.endSection(traceToken);
      }
+ 
+diff --git a/src/com/android/launcher3/ShortcutAndWidgetContainer.java b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
+index 519b63d..bfa99df 100644
+--- a/src/com/android/launcher3/ShortcutAndWidgetContainer.java
++++ b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
+@@ -28,6 +28,7 @@ import android.view.MotionEvent;
+ import android.view.View;
+ import android.view.ViewGroup;
+ 
++import com.android.launcher3.BubbleTextView;
+ import com.android.launcher3.CellLayout.ContainerType;
+ import com.android.launcher3.folder.FolderIcon;
+ import com.android.launcher3.views.ActivityContext;
+@@ -138,7 +139,10 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
+                     mBorderSpacing, null);
+             // Center the icon/folder
+             int cHeight = getCellContentHeight();
+-            int cellPaddingY = dp.isScalableGrid && mContainerType == WORKSPACE
++            boolean spannedIcon = (lp.cellHSpan > 1 || lp.cellVSpan > 1)
++                    && (child instanceof BubbleTextView || child instanceof FolderIcon);
++            int cellPaddingY = spannedIcon ? 0
++                    : dp.isScalableGrid && mContainerType == WORKSPACE
+                     ? dp.cellYPaddingPx
+                     : (int) Math.max(0, ((lp.height - cHeight) / 2f));
+ 
+@@ -195,6 +199,19 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
+         int childTop = lp.y;
+         child.layout(childLeft, childTop, childLeft + lp.width, childTop + lp.height);
+ 
++        if (!(child instanceof LauncherAppWidgetHostView)
++                && (child instanceof BubbleTextView || child instanceof FolderIcon)
++                && lp.cellHSpan > 1 && lp.cellHSpan == lp.cellVSpan && mCellWidth > 0) {
++            float scale = (float) lp.width / mCellWidth;
++            child.setPivotX(lp.width / 2f);
++            child.setPivotY(0f);
++            child.setScaleX(scale);
++            child.setScaleY(scale);
++        } else if (child instanceof BubbleTextView || child instanceof FolderIcon) {
++            child.setScaleX(1f);
++            child.setScaleY(1f);
++        }
++
+         if (lp.dropped) {
+             lp.dropped = false;
  
 diff --git a/src/com/android/launcher3/allapps/AllAppsContainerView.java b/src/com/android/launcher3/allapps/AllAppsContainerView.java
 index a7c75ad..d70ed8f 100644
