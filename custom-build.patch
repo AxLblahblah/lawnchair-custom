@@ -73,14 +73,13 @@ index 7e12249..2b1d256 100644
  GRADLE_CLASS_PATH=com.android.tools.build:gradle:4.0.0
  
 diff --git a/lawnchair/res/values/config.xml b/lawnchair/res/values/config.xml
-index 992164c..e09ae92 100644
+index 992164c..c784740 100644
 --- a/lawnchair/res/values/config.xml
 +++ b/lawnchair/res/values/config.xml
-@@ -42,6 +42,10 @@
+@@ -42,6 +42,9 @@
  
      <bool name="config_default_dark_status_bar">false</bool>
      <bool name="config_default_dock_search_bar">true</bool>
-+    <bool name="config_default_dock_disabled">true</bool>
 +    <bool name="config_default_allow_widget_overlap">true</bool>
 +    <bool name="config_default_force_resizable_widgets">true</bool>
 +    <bool name="config_default_disable_splash_screen">true</bool>
@@ -88,14 +87,15 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..55c5351 100644
+index 1d81cd7..92ac948 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
-@@ -33,6 +33,19 @@
+@@ -31,8 +31,18 @@
+     <string name="home_screen_rotation_label">Home Screen Rotation</string>
+     <string name="home_screen_rotaton_description">When device is rotated.</string>
      <string name="auto_add_shortcuts_label">Add New Apps to Home Screen</string>
-     <string name="dock_label">Dock</string>
-     <string name="dock_description">Search Bar, Icon Count</string>
-+    <string name="disable_dock">Disable Dock</string>
+-    <string name="dock_label">Dock</string>
+-    <string name="dock_description">Search Bar, Icon Count</string>
 +    <string name="workspace_padding">Workspace Padding</string>
 +    <string name="workspace_padding_horizontal">Horizontal Padding</string>
 +    <string name="workspace_padding_vertical">Vertical Padding</string>
@@ -111,7 +111,7 @@ index 1d81cd7..55c5351 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -49,6 +62,8 @@
+@@ -49,6 +59,8 @@
      <string name="icon_size">Icon Size</string>
      <string name="label_size">Label Size</string>
      <string name="show_home_labels">Show Labels</string>
@@ -120,7 +120,7 @@ index 1d81cd7..55c5351 100644
      <string name="notification_dots">Notification Dots</string>
      <string name="smartspace_preferences">Preferences</string>
      <string name="about_label">About</string>
-@@ -209,6 +224,11 @@
+@@ -209,6 +221,11 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -298,7 +298,7 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..84407e6 100644
+index 6d6af7f..62e41c2 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 @@ -178,6 +178,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
@@ -320,16 +320,10 @@ index 6d6af7f..84407e6 100644
      val drawerIconSizeFactor = preference(
          key = floatPreferencesKey(name = "drawer_icon_size_factor"),
          defaultValue = resourceProvider.getFloat(R.dimen.config_default_drawer_icon_size_factor),
-@@ -208,6 +220,84 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +220,78 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
-+    val dockDisabled = preference(
-+        key = booleanPreferencesKey(name = "dock_disabled"),
-+        defaultValue = context.resources.getBoolean(R.bool.config_default_dock_disabled),
-+        onSet = { reloadHelper.restart() },
-+    )
-+
 +    val allowWidgetOverlap = preference(
 +        key = booleanPreferencesKey(name = "allow_widget_overlap"),
 +        defaultValue = context.resources.getBoolean(R.bool.config_default_allow_widget_overlap),
@@ -558,25 +552,6 @@ index 3820d3b..7c98666 100644
          PreferenceGroup(heading = stringResource(id = R.string.icons)) {
              SliderPreference(
                  label = stringResource(id = R.string.icon_size),
-diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
-index 703cc2f..72de5c9 100644
---- a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
-+++ b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
-@@ -37,8 +37,13 @@ fun DockPreferences() {
-     val prefs = preferenceManager()
-     val prefs2 = preferenceManager2()
-     PreferenceLayout(label = stringResource(id = R.string.dock_label)) {
-+        PreferenceGroup(isFirstChild = true) {
-+            SwitchPreference(
-+                adapter = prefs2.dockDisabled.getAdapter(),
-+                label = stringResource(id = R.string.disable_dock),
-+            )
-+        }
-         PreferenceGroup(
--            isFirstChild = true,
-             heading = stringResource(id = R.string.search_bar_label),
-         ) {
-             val hotseatQsbAdapter = prefs2.hotseatQsb.getAdapter()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
 index f60565f..35467f5 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
@@ -684,6 +659,44 @@ index 547a84f..226e249 100644
                  SwitchPreference(
                      adapter = prefs2.roundedWidgets.getAdapter(),
                      label = stringResource(id = R.string.force_rounded_widgets),
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
+index 330e77f..0e20830 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
+@@ -40,7 +40,6 @@ object Routes {
+     const val GENERAL: String = "general"
+     const val ABOUT: String = "about"
+     const val HOME_SCREEN: String = "homeScreen"
+-    const val DOCK: String = "dock"
+     const val APP_DRAWER: String = "appDrawer"
+     const val FOLDERS: String = "folders"
+     const val QUICKSTEP: String = "quickstep"
+@@ -86,7 +85,6 @@ fun Preferences(interactor: PreferenceInteractor = viewModel<PreferenceViewModel
+                     preferenceGraph(route = "/", { PreferencesDashboard() }) { subRoute ->
+                         generalGraph(route = subRoute(Routes.GENERAL))
+                         homeScreenGraph(route = subRoute(Routes.HOME_SCREEN))
+-                        dockGraph(route = subRoute(Routes.DOCK))
+                         appDrawerGraph(route = subRoute(Routes.APP_DRAWER))
+                         folderGraph(route = subRoute(Routes.FOLDERS))
+                         quickstepGraph(route = subRoute(Routes.QUICKSTEP))
+diff --git a/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt b/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
+index 734821f..72b9326 100644
+--- a/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
++++ b/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
+@@ -49,13 +49,6 @@ fun PreferencesDashboard() {
+             route = Routes.HOME_SCREEN
+         )
+ 
+-        PreferenceCategory(
+-            label = stringResource(R.string.dock_label),
+-            description = stringResource(R.string.dock_description),
+-            iconResource = R.drawable.ic_dock,
+-            route = Routes.DOCK
+-        )
+-
+         PreferenceCategory(
+             label = stringResource(R.string.app_drawer_label),
+             description = stringResource(R.string.app_drawer_description),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
 index 958111b..8d1777d 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
@@ -1211,25 +1224,23 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..b6b0008 100644
+index 720f3d8..40bde52 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -72,6 +72,10 @@ public class DeviceProfile {
+@@ -72,6 +72,9 @@ public class DeviceProfile {
      public final boolean isTwoPanels;
      public final boolean allowRotation;
  
-+    private final boolean mDockDisabled;
 +    private final int mExtraWorkspacePaddingHpx;
 +    private final int mExtraWorkspacePaddingVpx;
 +
      // Device properties in current orientation
      public final boolean isLandscape;
      public final boolean isMultiWindowMode;
-@@ -226,6 +230,11 @@ public class DeviceProfile {
+@@ -226,6 +229,10 @@ public class DeviceProfile {
  
          PreferenceManager2 preferenceManager2 = PreferenceManager2.INSTANCE.get(context);
          allAppsCellHeightMultiplier = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerCellHeightFactor());
-+        mDockDisabled = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDockDisabled());
 +        mExtraWorkspacePaddingHpx = Utilities.dpToPx(
 +                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingHorizontal()));
 +        mExtraWorkspacePaddingVpx = Utilities.dpToPx(
@@ -1237,32 +1248,28 @@ index 720f3d8..b6b0008 100644
  
          this.inv = inv;
          this.isLandscape = windowBounds.isLandscape();
-@@ -436,6 +445,13 @@ public class DeviceProfile {
+@@ -436,6 +443,11 @@ public class DeviceProfile {
              // Recalculate the available dimensions using the new hotseat size.
              updateAvailableDimensions(res);
          }
-+        if (mDockDisabled) {
-+            hotseatBarTopPaddingPx = 0;
-+            hotseatBarSizeExtraSpacePx = 0;
-+            extraHotseatBottomPadding = 0;
-+            updateHotseatIconSize(iconSizePx);
-+            updateAvailableDimensions(res);
-+        }
++        hotseatBarTopPaddingPx = 0;
++        hotseatBarSizeExtraSpacePx = 0;
++        extraHotseatBottomPadding = 0;
++        updateHotseatIconSize(iconSizePx);
++        updateAvailableDimensions(res);
          updateWorkspacePadding();
  
          flingToDeleteThresholdVelocity = res.getDimensionPixelSize(
-@@ -459,6 +475,10 @@ public class DeviceProfile {
+@@ -459,6 +471,8 @@ public class DeviceProfile {
                      + hotseatBarBottomPaddingPx + (isScalableGrid ? 0 : hotseatExtraVerticalSize)
                      + hotseatBarSizeExtraSpacePx;
          }
-+        if (mDockDisabled) {
-+            hotseatBarSizePx = 0;
-+            hotseatCellHeightPx = 0;
-+        }
++        hotseatBarSizePx = 0;
++        hotseatCellHeightPx = 0;
      }
  
      private void setCellLayoutBorderSpacing(int borderSpacing) {
-@@ -700,7 +720,9 @@ public class DeviceProfile {
+@@ -700,7 +714,9 @@ public class DeviceProfile {
      private void updateFolderCellSize(float scale, Resources res) {
          float invIconSizeDp = isVerticalBarLayout() ? inv.landscapeIconSize : inv.iconSize;
          folderChildIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, scale));
@@ -1273,7 +1280,7 @@ index 720f3d8..b6b0008 100644
          folderLabelTextSizePx = (int) (folderChildTextSizePx * folderLabelTextScale);
  
          int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-@@ -813,6 +835,10 @@ public class DeviceProfile {
+@@ -813,6 +829,10 @@ public class DeviceProfile {
                          paddingBottom);
              }
          }
@@ -1285,40 +1292,26 @@ index 720f3d8..b6b0008 100644
  
      public Rect getHotseatLayoutPadding() {
 diff --git a/src/com/android/launcher3/Hotseat.java b/src/com/android/launcher3/Hotseat.java
-index d5c71af..05da01d 100644
+index d5c71af..a39e3b0 100644
 --- a/src/com/android/launcher3/Hotseat.java
 +++ b/src/com/android/launcher3/Hotseat.java
-@@ -57,6 +57,8 @@ public class Hotseat extends CellLayout implements Insettable {
- 
-     private final int mTaskbarViewHeight;
- 
-+    private final boolean mDockRemoved;
-+
-     public Hotseat(Context context) {
-         this(context, null);
-     }
-@@ -76,6 +78,24 @@ public class Hotseat extends CellLayout implements Insettable {
+@@ -76,6 +76,19 @@ public class Hotseat extends CellLayout implements Insettable {
          addView(mQsb);
  
          mTaskbarViewHeight = context.getResources().getDimensionPixelSize(R.dimen.taskbar_size);
 +
-+        mDockRemoved = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDockDisabled());
-+        if (mDockRemoved) {
-+            setVisibility(GONE);
-+        }
++        setVisibility(GONE);
 +    }
 +
 +    @Override
 +    protected void onAttachedToWindow() {
 +        super.onAttachedToWindow();
-+        if (mDockRemoved) {
-+            post(() -> {
-+                ViewGroup parent = (ViewGroup) getParent();
-+                if (parent != null) {
-+                    parent.removeView(this);
-+                }
-+            });
-+        }
++        post(() -> {
++            ViewGroup parent = (ViewGroup) getParent();
++            if (parent != null) {
++                parent.removeView(this);
++            }
++        });
      }
  
      /**
