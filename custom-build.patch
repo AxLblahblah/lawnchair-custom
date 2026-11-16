@@ -141,7 +141,7 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..8bc3d78 100644
+index 1d81cd7..600f986 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
 @@ -33,6 +33,34 @@
@@ -179,7 +179,7 @@ index 1d81cd7..8bc3d78 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -209,6 +237,13 @@
+@@ -209,6 +237,11 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -187,9 +187,7 @@ index 1d81cd7..8bc3d78 100644
 +    <string name="clear_all_pill_label">Pill Background</string>
 +    <string name="clear_all_pill_radius_label">Corner Radius</string>
 +    <string name="clear_all_show_icon_label">Show Icon</string>
-+    <string name="force_stop_label">Force Stop</string>
-+    <string name="force_stop_done">Force stopped</string>
-+    <string name="force_stop_no_root">Root access required</string>
++    <string name="hide_page_indicator">Hide Page Indicator</string>
      <string name="pick_icon_from_label">Pick Icon From</string>
      <string name="experimental_features_label">Experimental Features</string>
      <string name="icon_picker_label">Per-App Icon Customization</string>
@@ -736,10 +734,10 @@ index 0000000..2056252
 +}
 diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetProvider.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetProvider.kt
 new file mode 100644
-index 0000000..8d44ad1
+index 0000000..aec232b
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetProvider.kt
-@@ -0,0 +1,131 @@
+@@ -0,0 +1,136 @@
 +/*
 + * Copyright 2021, Lawnchair
 + *
@@ -849,11 +847,16 @@ index 0000000..8d44ad1
 +                .setData(Uri.parse("folderwidget://$appWidgetId"))
 +            views.setRemoteAdapter(R.id.folder_widget_grid, adapterIntent)
 +
++            val launchFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
++                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
++            } else {
++                PendingIntent.FLAG_UPDATE_CURRENT
++            }
 +            val launchTemplate = PendingIntent.getBroadcast(
 +                context, 0,
 +                Intent(context, FolderWidgetProvider::class.java)
 +                    .setAction(FolderWidgetData.ACTION_LAUNCH_APP),
-+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
++                launchFlags
 +            )
 +            views.setPendingIntentTemplate(R.id.folder_widget_grid, launchTemplate)
 +
@@ -873,10 +876,10 @@ index 0000000..8d44ad1
 +}
 diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetService.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetService.kt
 new file mode 100644
-index 0000000..3e045ac
+index 0000000..f1cc8f0
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetService.kt
-@@ -0,0 +1,88 @@
+@@ -0,0 +1,92 @@
 +/*
 + * Copyright 2021, Lawnchair
 + *
@@ -947,8 +950,12 @@ index 0000000..3e045ac
 +        if (app != null) {
 +            views.setTextViewText(R.id.folder_widget_item_label, app.label)
 +            views.setTextColor(R.id.folder_widget_item_label, colors.label)
-+            app.icon?.let { views.setViewVisibility(R.id.folder_widget_item_icon, 0) }
-+            app.icon?.let { views.setImageViewBitmap(R.id.folder_widget_item_icon, it) }
++            if (app.icon != null) {
++                views.setViewVisibility(R.id.folder_widget_item_icon, android.view.View.VISIBLE)
++                views.setImageViewBitmap(R.id.folder_widget_item_icon, app.icon)
++            } else {
++                views.setViewVisibility(R.id.folder_widget_item_icon, android.view.View.GONE)
++            }
 +
 +            val fillInIntent = Intent().putExtra(
 +                FolderWidgetData.EXTRA_COMPONENT, app.component.flattenToString())
@@ -1087,10 +1094,10 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..5e847c0 100644
+index 6d6af7f..8de14a2 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -208,6 +208,78 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +208,84 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -1162,6 +1169,12 @@ index 6d6af7f..5e847c0 100644
 +
 +    val hideDrawerScrollbar = preference(
 +        key = booleanPreferencesKey(name = "hide_drawer_scrollbar"),
++        defaultValue = false,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val hidePageIndicator = preference(
++        key = booleanPreferencesKey(name = "hide_page_indicator"),
 +        defaultValue = false,
 +        onSet = { reloadHelper.recreate() },
 +    )
@@ -1556,10 +1569,21 @@ index f60565f..35467f5 100644
              ThemePreference()
              AccentColorPreference()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-index 547a84f..b4df38b 100644
+index 547a84f..dcf3a7f 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-@@ -70,6 +70,20 @@ fun HomeScreenPreferences() {
+@@ -62,6 +62,10 @@ fun HomeScreenPreferences() {
+                 adapter = prefs2.dt2s.getAdapter(),
+                 label = stringResource(id = R.string.workspace_dt2s),
+             )
++            SwitchPreference(
++                adapter = prefs2.hidePageIndicator.getAdapter(),
++                label = stringResource(id = R.string.hide_page_indicator),
++            )
+             val columns by prefs.workspaceColumns.getAdapter()
+             val rows by prefs.workspaceRows.getAdapter()
+             NavigationActionPreference(
+@@ -70,6 +74,20 @@ fun HomeScreenPreferences() {
                  subtitle = stringResource(id = R.string.x_by_y, columns, rows),
              )
          }
@@ -1580,7 +1604,7 @@ index 547a84f..b4df38b 100644
          PreferenceGroup(heading = stringResource(id = R.string.status_bar_label)) {
              val showStatusBarAdapter = prefs2.showStatusBar.getAdapter()
              SwitchPreference(
-@@ -131,8 +145,12 @@ fun HomeScreenPreferences() {
+@@ -131,8 +149,12 @@ fun HomeScreenPreferences() {
                  )
              }
          }
@@ -1918,6 +1942,77 @@ index 3048ff8..4b9c215 100644
              iconAlphaStart = hasSplashScreen && !hasDifferentAppIcon ? 0 : 1f;
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
+diff --git a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
+index e75d751..4187b05 100644
+--- a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
++++ b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
+@@ -136,6 +136,7 @@ public class TaskOverlayFactory implements ResourceBasedOverride {
+     /** Note that these will be shown in order from top to bottom, if available for the task. */
+     private static final TaskShortcutFactory[] MENU_OPTIONS = new TaskShortcutFactory[]{
+             TaskShortcutFactory.APP_INFO,
++            TaskShortcutFactory.FORCE_STOP,
+             TaskShortcutFactory.SPLIT_SCREEN,
+             TaskShortcutFactory.PIN,
+             TaskShortcutFactory.INSTALL,
+diff --git a/quickstep/src/com/android/quickstep/TaskShortcutFactory.java b/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
+index a0fcfe9..2334c40 100644
+--- a/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
++++ b/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
+@@ -30,6 +30,7 @@ import android.graphics.Rect;
+ import android.os.Handler;
+ import android.os.Looper;
+ import android.view.View;
++import android.widget.Toast;
+ import android.window.SplashScreen;
+ 
+ import com.android.launcher3.BaseDraggingActivity;
+@@ -66,6 +67,8 @@ public interface TaskShortcutFactory {
+ 
+     TaskShortcutFactory APP_INFO = (activity, view) -> new AppInfo(activity, view.getItemInfo());
+ 
++    TaskShortcutFactory FORCE_STOP = (activity, view) -> new ForceStopSystemShortcut(activity, view);
++
+     abstract class MultiWindowFactory implements TaskShortcutFactory {
+ 
+         private final int mIconRes;
+@@ -321,6 +324,37 @@ public interface TaskShortcutFactory {
+         }
+     }
+ 
++    class ForceStopSystemShortcut extends SystemShortcut {
++
++        private final TaskView mTaskView;
++
++        public ForceStopSystemShortcut(BaseDraggingActivity target, TaskView tv) {
++            super(R.drawable.ic_block_no_shadow, R.string.force_stop_label, target, tv.getItemInfo());
++            mTaskView = tv;
++        }
++
++        @Override
++        public void onClick(View view) {
++            final String packageName = mTaskView.getTask().getTopComponent().getPackageName();
++            final BaseDraggingActivity activity = mTarget;
++            dismissTaskMenuView(mTarget);
++            new Thread(() -> {
++                boolean success = false;
++                try {
++                    Process process = Runtime.getRuntime()
++                            .exec(new String[]{"su", "-c", "am force-stop " + packageName});
++                    success = process.waitFor() == 0;
++                } catch (Throwable t) {
++                    success = false;
++                }
++                final int messageRes = success
++                        ? R.string.force_stop_done : R.string.force_stop_no_root;
++                new Handler(Looper.getMainLooper()).post(() ->
++                        Toast.makeText(activity, messageRes, Toast.LENGTH_SHORT).show());
++            }).start();
++        }
++    }
++
+     TaskShortcutFactory INSTALL = (activity, view) ->
+             InstantAppResolver.newInstance(activity).isInstantApp(activity,
+                  view.getTask().getTopComponent().getPackageName())
 diff --git a/res/layout/folder_widget.xml b/res/layout/folder_widget.xml
 new file mode 100644
 index 0000000..f21940d
@@ -1994,6 +2089,19 @@ index 0000000..45f160b
 +        android:gravity="center" />
 +
 +</LinearLayout>
+diff --git a/res/values/strings.xml b/res/values/strings.xml
+index d1774e5..bf52f31 100644
+--- a/res/values/strings.xml
++++ b/res/values/strings.xml
+@@ -420,4 +420,8 @@
+ 
+     <!-- Failed action error message: e.g. Failed: Pause -->
+     <string name="remote_action_failed">Failed: <xliff:g id="what" example="Pause">%1$s</xliff:g></string>
++
++    <string name="force_stop_label">Force Stop</string>
++    <string name="force_stop_done">Force stopped</string>
++    <string name="force_stop_no_root">Root access required</string>
+ </resources>
 diff --git a/res/xml/folder_widget_info.xml b/res/xml/folder_widget_info.xml
 new file mode 100644
 index 0000000..0c6f100
@@ -2321,6 +2429,32 @@ index 93f824f..0d001b5 100644
              occupancy.markCells(item, true);
              return true;
          } else {
+diff --git a/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java b/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
+index f73d782..4f17f4f 100644
+--- a/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
++++ b/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
+@@ -26,6 +26,9 @@ import com.android.launcher3.R;
+ import com.android.launcher3.Utilities;
+ import com.android.launcher3.util.Themes;
+ 
++import app.lawnchair.preferences2.PreferenceManager2;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
++
+ /**
+  * A PageIndicator that briefly shows a fraction of a line when moving between pages
+  *
+@@ -126,6 +129,11 @@ public class WorkspacePageIndicator extends View implements Insettable, PageIndi
+         boolean darkText = Themes.getAttrBoolean(mLauncher, R.attr.isWorkspaceDarkText);
+         mActiveAlpha = darkText ? BLACK_ALPHA : WHITE_ALPHA;
+         mLinePaint.setColor(darkText ? Color.BLACK : Color.WHITE);
++
++        if (PreferenceExtensionsKt.firstBlocking(
++                PreferenceManager2.getInstance(context).getHidePageIndicator())) {
++            setVisibility(GONE);
++        }
+     }
+ 
+     @Override
 diff --git a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java b/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
 index d77d99d..846a6ad 100644
 --- a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
