@@ -141,7 +141,7 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..b321710 100644
+index 1d81cd7..6d85493 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
 @@ -33,6 +33,34 @@
@@ -179,15 +179,16 @@ index 1d81cd7..b321710 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -49,6 +77,7 @@
+@@ -49,6 +77,8 @@
      <string name="icon_size">Icon Size</string>
      <string name="label_size">Label Size</string>
      <string name="show_home_labels">Show Labels</string>
 +    <string name="show_folder_labels">Show Labels in Folders</string>
++    <string name="folder_footer_height">Folder Bottom Spacing</string>
      <string name="notification_dots">Notification Dots</string>
      <string name="smartspace_preferences">Preferences</string>
      <string name="about_label">About</string>
-@@ -209,6 +238,14 @@
+@@ -209,6 +239,14 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -434,10 +435,10 @@ index 0000000..aa877b4
 +}
 diff --git a/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
 new file mode 100644
-index 0000000..430e78a
+index 0000000..1a94785
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/folderwidget/FolderWidgetConfigActivity.kt
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,129 @@
 +/*
 + * Copyright 2021, Lawnchair
 + *
@@ -462,6 +463,7 @@ index 0000000..430e78a
 +import androidx.activity.ComponentActivity
 +import androidx.activity.compose.setContent
 +import androidx.compose.foundation.background
++import androidx.compose.material3.Surface
 +import androidx.compose.foundation.clickable
 +import androidx.compose.foundation.layout.Box
 +import androidx.compose.foundation.layout.Column
@@ -505,7 +507,8 @@ index 0000000..430e78a
 +
 +        setContent {
 +            LawnchairTheme {
-+                FolderWidgetConfigScreen(
++                Surface(modifier = Modifier.fillMaxSize()) {
++                    FolderWidgetConfigScreen(
 +                    onPicked = { folderId ->
 +                        FolderWidgetData.setFolderId(this, appWidgetId, folderId)
 +                        val manager = AppWidgetManager.getInstance(this)
@@ -517,6 +520,7 @@ index 0000000..430e78a
 +                        finish()
 +                    }
 +                )
++                }
 +            }
 +        }
 +    }
@@ -534,7 +538,6 @@ index 0000000..430e78a
 +    Column(
 +        modifier = Modifier
 +            .fillMaxSize()
-+            .background(MaterialTheme.colorScheme.background)
 +            .verticalScroll(rememberScrollState())
 +    ) {
 +        Box(modifier = Modifier.padding(16.dp)) {
@@ -1138,10 +1141,10 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..cd093d4 100644
+index 6d6af7f..3d51011 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -178,6 +178,12 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -178,6 +178,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -1151,10 +1154,16 @@ index 6d6af7f..cd093d4 100644
 +        onSet = { reloadHelper.reloadGrid() },
 +    )
 +
++    val folderFooterHeightFactor = preference(
++        key = floatPreferencesKey(name = "folder_footer_height_factor"),
++        defaultValue = 1f,
++        onSet = { reloadHelper.reloadGrid() },
++    )
++
      val drawerIconSizeFactor = preference(
          key = floatPreferencesKey(name = "drawer_icon_size_factor"),
          defaultValue = resourceProvider.getFloat(R.dimen.config_default_drawer_icon_size_factor),
-@@ -208,6 +214,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +220,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -1638,7 +1647,7 @@ index f60565f..35467f5 100644
              ThemePreference()
              AccentColorPreference()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-index 547a84f..cdfec28 100644
+index 547a84f..226e249 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 @@ -62,6 +62,10 @@ fun HomeScreenPreferences() {
@@ -1673,7 +1682,7 @@ index 547a84f..cdfec28 100644
          PreferenceGroup(heading = stringResource(id = R.string.status_bar_label)) {
              val showStatusBarAdapter = prefs2.showStatusBar.getAdapter()
              SwitchPreference(
-@@ -117,6 +135,10 @@ fun HomeScreenPreferences() {
+@@ -117,6 +135,17 @@ fun HomeScreenPreferences() {
                  adapter = homeScreenLabelsAdapter,
                  label = stringResource(id = R.string.show_home_labels),
              )
@@ -1681,10 +1690,17 @@ index 547a84f..cdfec28 100644
 +                adapter = prefs2.showIconLabelsInFolders.getAdapter(),
 +                label = stringResource(id = R.string.show_folder_labels),
 +            )
++            SliderPreference(
++                label = stringResource(id = R.string.folder_footer_height),
++                adapter = prefs2.folderFooterHeightFactor.getAdapter(),
++                step = 0.05f,
++                valueRange = 0F..2F,
++                showAsPercentage = true,
++            )
              AnimatedVisibility(
                  visible = homeScreenLabelsAdapter.state.value,
                  enter = expandVertically() + fadeIn(),
-@@ -131,8 +153,12 @@ fun HomeScreenPreferences() {
+@@ -131,8 +160,12 @@ fun HomeScreenPreferences() {
                  )
              }
          }
@@ -2640,22 +2656,37 @@ index a7c75ad..d70ed8f 100644
          }
          mHeaderTop = mHeader.getTop();
 diff --git a/src/com/android/launcher3/folder/Folder.java b/src/com/android/launcher3/folder/Folder.java
-index 7dccc62..9c4878f 100644
+index 7dccc62..0fe0e8f 100644
 --- a/src/com/android/launcher3/folder/Folder.java
 +++ b/src/com/android/launcher3/folder/Folder.java
-@@ -301,7 +301,10 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
+@@ -113,8 +113,10 @@ import java.util.StringJoiner;
+ import java.util.stream.Collectors;
+ import java.util.stream.Stream;
+ 
++import app.lawnchair.preferences2.PreferenceManager2;
+ import app.lawnchair.theme.drawable.DrawableTokens;
+ import app.lawnchair.util.EditTextExtensions;
++import com.patrykmichalik.preferencemanager.PreferenceExtensionsKt;
+ 
+ /**
+  * Represents a set of icons chosen by the user or generated by the system.
+@@ -301,7 +303,14 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
          }
  
          mFooter = findViewById(R.id.folder_footer);
 -        mFooterHeight = getResources().getDimensionPixelSize(R.dimen.folder_label_height);
-+        boolean folderLabelsEnabled = dp.inv.folderIconTextSize != 0f;
++        float footerFactor = PreferenceExtensionsKt.firstBlocking(
++                PreferenceManager2.getInstance(getContext()).getFolderFooterHeightFactor());
++        boolean folderLabelsEnabled = dp.inv.folderIconTextSize != 0f && footerFactor > 0f;
 +        mFooterHeight = folderLabelsEnabled
-+                ? getResources().getDimensionPixelSize(R.dimen.folder_label_height) : 0;
++                ? Math.round(getResources().getDimensionPixelSize(R.dimen.folder_label_height)
++                        * footerFactor)
++                : 0;
 +        mFooter.setVisibility(folderLabelsEnabled ? View.VISIBLE : View.GONE);
  
          if (Utilities.ATLEAST_R) {
              mKeyboardInsetAnimationCallback = new KeyboardInsetAnimationCallback(this);
-@@ -872,6 +875,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
+@@ -872,6 +881,11 @@ public class Folder extends AbstractFloatingView implements ClipPathView, DragSo
          clearDragInfo();
          mState = STATE_SMALL;
          mContent.setCurrentPage(0);
