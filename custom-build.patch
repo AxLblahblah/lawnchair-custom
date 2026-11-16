@@ -141,7 +141,7 @@ index 992164c..e09ae92 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..4276826 100644
+index 1d81cd7..8bc3d78 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
 @@ -33,6 +33,34 @@
@@ -179,9 +179,36 @@ index 1d81cd7..4276826 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
+@@ -209,6 +237,13 @@
+     <string name="icon_pack_external_picker">Open External Picker</string>
+     <string name="recents_actions_label">Quick Actions</string>
+     <string name="recents_clear_all">Clear All</string>
++    <string name="clear_all_button_label">Clear All Button</string>
++    <string name="clear_all_pill_label">Pill Background</string>
++    <string name="clear_all_pill_radius_label">Corner Radius</string>
++    <string name="clear_all_show_icon_label">Show Icon</string>
++    <string name="force_stop_label">Force Stop</string>
++    <string name="force_stop_done">Force stopped</string>
++    <string name="force_stop_no_root">Root access required</string>
+     <string name="pick_icon_from_label">Pick Icon From</string>
+     <string name="experimental_features_label">Experimental Features</string>
+     <string name="icon_picker_label">Per-App Icon Customization</string>
+diff --git a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
+index 3046dc6..0b3b213 100644
+--- a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
++++ b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
+@@ -249,7 +249,7 @@ class LawnchairLauncher : QuickstepLauncher(), LifecycleOwner,
+     override fun getSupportedShortcuts(): Stream<SystemShortcut.Factory<*>> {
+         return Stream.concat(
+             super.getSupportedShortcuts(),
+-            Stream.of(LawnchairShortcut.CUSTOMIZE)
++            Stream.of(LawnchairShortcut.CUSTOMIZE, LawnchairShortcut.FORCE_STOP)
+         )
+     }
+ 
 diff --git a/lawnchair/src/app/lawnchair/backup/BackupUtils.kt b/lawnchair/src/app/lawnchair/backup/BackupUtils.kt
 new file mode 100644
-index 0000000..7903876
+index 0000000..aa877b4
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/backup/BackupUtils.kt
 @@ -0,0 +1,180 @@
@@ -938,6 +965,127 @@ index 0000000..3e045ac
 +
 +    override fun hasStableIds(): Boolean = false
 +}
+diff --git a/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt b/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt
+index 7e15e32..752fa66 100644
+--- a/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt
++++ b/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt
+@@ -1,14 +1,19 @@
+ package app.lawnchair.overview
+ 
+ import android.content.Context
++import android.content.res.ColorStateList
++import android.graphics.drawable.Drawable
++import android.graphics.drawable.GradientDrawable
+ import android.util.AttributeSet
+ import android.view.View
+ import android.widget.Button
+ import android.widget.LinearLayout
+ import android.widget.Space
++import androidx.core.content.ContextCompat
+ import androidx.core.view.ViewCompat
+ import androidx.core.view.isVisible
+ import app.lawnchair.preferences.PreferenceManager
++import app.lawnchair.theme.color.ColorTokens
+ import app.lawnchair.util.isOnePlusStock
+ import com.android.launcher3.R
+ import com.android.quickstep.views.OverviewActionsView
+@@ -20,6 +25,7 @@ class LawnchairOverviewActionsView @JvmOverloads constructor(
+ ) : OverviewActionsView<TaskOverlayFactoryImpl.OverlayUICallbacks>(context, attrs, defStyleAttr) {
+ 
+     private val prefs = PreferenceManager.getInstance(context)
++    private val pillBackground = GradientDrawable()
+ 
+     private lateinit var container: LinearLayout
+     private lateinit var screenshotAction: Button
+@@ -35,15 +41,23 @@ class LawnchairOverviewActionsView @JvmOverloads constructor(
+         lensAction = ViewCompat.requireViewById(this, R.id.action_lens)
+         screenshotAction = ViewCompat.requireViewById(this, R.id.action_screenshot)
+         shareAction = ViewCompat.requireViewById(this, R.id.action_share)
+-        
++
+         lensAction.setOnClickListener { mCallbacks?.onLens() }
+ 
++        clearAllAction.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
++            updateClearAllPillRadius()
++        }
++
+         prefs.recentsActionClearAll.subscribeChanges(this, ::updateVisibilities)
+         prefs.recentsActionLens.subscribeChanges(this, ::updateVisibilities)
+         prefs.recentsActionScreenshot.subscribeChanges(this, ::updateVisibilities)
+         prefs.recentsActionShare.subscribeChanges(this, ::updateVisibilities)
++        prefs.clearAllPillEnabled.subscribeChanges(this) { updateClearAllStyle() }
++        prefs.clearAllPillRadius.subscribeChanges(this) { updateClearAllPill() }
++        prefs.clearAllShowIcon.subscribeChanges(this) { updateClearAllStyle() }
+ 
+         updateVisibilities()
++        updateClearAllStyle()
+     }
+ 
+     private fun updateVisibilities() {
+@@ -71,6 +85,49 @@ class LawnchairOverviewActionsView @JvmOverloads constructor(
+             container.addView(view)
+             container.addView(createSpace())
+         }
++        updateClearAllStyle()
++    }
++
++    private fun updateClearAllStyle() {
++        updateClearAllIcon()
++        updateClearAllPill()
++    }
++
++    private fun updateClearAllIcon() {
++        if (prefs.clearAllShowIcon.get()) {
++            val icon = ContextCompat.getDrawable(context, R.drawable.ic_clear_all_recents)
++            icon?.mutate()?.setTint(clearAllAction.textColors.defaultColor)
++            clearAllAction.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
++        } else {
++            clearAllAction.setCompoundDrawablesRelativeWithIntrinsicBounds(
++                null as Drawable?, null, null, null
++            )
++        }
++    }
++
++    private fun updateClearAllPill() {
++        if (!prefs.clearAllPillEnabled.get()) {
++            clearAllAction.background = null
++            return
++        }
++        val density = resources.displayMetrics.density
++        val horizontal = (16 * density).toInt()
++        val vertical = (8 * density).toInt()
++        clearAllAction.setPadding(horizontal, vertical, horizontal, vertical)
++        pillBackground.color = ColorStateList.valueOf(
++            ColorTokens.PopupColorPrimary.resolveColor(context)
++        )
++        updateClearAllPillRadius()
++        clearAllAction.background = pillBackground
++    }
++
++    private fun updateClearAllPillRadius() {
++        if (!prefs.clearAllPillEnabled.get()) return
++        val height = clearAllAction.height
++        if (height > 0) {
++            pillBackground.cornerRadius = prefs.clearAllPillRadius.get() * height / 2f
++            clearAllAction.background = pillBackground
++        }
+     }
+ 
+     private fun createSpace(): View {
+diff --git a/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt b/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt
+index 3931998..03389e8 100644
+--- a/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt
++++ b/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt
+@@ -77,6 +77,9 @@ class PreferenceManager private constructor(private val context: Context) : Base
+     val recentsActionShare = BoolPref("pref_recentsActionShare", isOnePlusStock)
+     val recentsActionLens = BoolPref("pref_recentsActionLens", true)
+     val recentsActionClearAll = BoolPref("pref_clearAllAsAction", false)
++    val clearAllPillEnabled = BoolPref("pref_clearAllPillEnabled", true)
++    val clearAllPillRadius = FloatPref("pref_clearAllPillRadius", 1F)
++    val clearAllShowIcon = BoolPref("pref_clearAllShowIcon", true)
+ 
+     init {
+         sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 index 6d6af7f..5e847c0 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
@@ -1069,7 +1217,7 @@ index dcb9334..6cc94ab 100644
  @Suppress("MemberVisibilityCanBePrivate", "unused")
  object ColorTokens {
 @@ -60,6 +61,10 @@ object ColorTokens {
-     @JvmField val FocusHighlight = DayNightColorToken(Neutral2_500.setLStar(87.0), Neutral1_800)
+     @JvmField val FocusHighlight = DayNightColorToken(Neutral1_0, Neutral1_700)
      @JvmField val GroupHighlight = Surface
      @JvmField val OverviewScrim = DayNightColorToken(Neutral2_500.setLStar(87.0), Neutral1_800)
 +        .withPreferences { prefs ->
@@ -1079,6 +1227,70 @@ index dcb9334..6cc94ab 100644
      @JvmField val SearchboxHighlight = DayNightColorToken(SurfaceVariantLight, Neutral1_800)
  
      @JvmField val FolderDotColor = Accent2_50
+diff --git a/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt b/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
+index 83e4f7f..8f5c1ec 100644
+--- a/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
++++ b/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
+@@ -2,6 +2,7 @@ package app.lawnchair.ui.popup
+ 
+ import android.content.pm.LauncherActivityInfo
+ import android.view.View
++import android.widget.Toast
+ import androidx.compose.foundation.layout.PaddingValues
+ import androidx.compose.material.ExperimentalMaterialApi
+ import androidx.compose.ui.unit.dp
+@@ -16,6 +17,11 @@ import com.android.launcher3.icons.BitmapInfo
+ import com.android.launcher3.model.data.ItemInfo
+ import com.android.launcher3.popup.SystemShortcut
+ import com.android.launcher3.util.ComponentKey
++import com.topjohnwu.superuser.Shell
++import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.launch
++import kotlinx.coroutines.withContext
+ 
+ class LawnchairShortcut {
+ 
+@@ -23,6 +29,10 @@ class LawnchairShortcut {
+         val CUSTOMIZE = SystemShortcut.Factory<LawnchairLauncher> { activity, itemInfo ->
+             if (itemInfo.itemType == ITEM_TYPE_APPLICATION) Customize(activity, itemInfo) else null
+         }
++
++        val FORCE_STOP = SystemShortcut.Factory<LawnchairLauncher> { activity, itemInfo ->
++            if (itemInfo.targetComponent != null) ForceStop(activity, itemInfo) else null
++        }
+     }
+ 
+     class Customize(
+@@ -56,4 +66,28 @@ class LawnchairShortcut {
+             }
+         }
+     }
++
++    class ForceStop(
++        private val launcher: LawnchairLauncher,
++        itemInfo: ItemInfo
++    ) : SystemShortcut<LawnchairLauncher>(R.drawable.ic_block_no_shadow, R.string.force_stop_label, launcher, itemInfo) {
++
++        override fun onClick(v: View) {
++            val packageName = mItemInfo.targetComponent?.packageName ?: return
++            AbstractFloatingView.closeAllOpenViews(launcher)
++            CoroutineScope(Dispatchers.IO).launch {
++                if (!Shell.rootAccess()) {
++                    withContext(Dispatchers.Main) {
++                        Toast.makeText(launcher, R.string.force_stop_no_root, Toast.LENGTH_SHORT).show()
++                    }
++                    return@launch
++                }
++                val result = Shell.su("am force-stop $packageName").exec()
++                withContext(Dispatchers.Main) {
++                    val message = if (result.isSuccess) R.string.force_stop_done else R.string.force_stop_no_root
++                    Toast.makeText(launcher, message, Toast.LENGTH_SHORT).show()
++                }
++            }
++        }
++    }
+ }
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
 index 3820d3b..7c98666 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
@@ -1422,7 +1634,7 @@ index 734821f..05de1a3 100644
              PreferenceCategory(
                  label = stringResource(id = R.string.quickstep_label),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
-index 958111b..a3dcff5 100644
+index 958111b..8d1777d 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
 @@ -10,6 +10,7 @@ import androidx.navigation.NavGraphBuilder
@@ -1441,10 +1653,36 @@ index 958111b..a3dcff5 100644
      val context = LocalContext.current
      val lensAvailable = remember {
          context.packageManager.getLaunchIntentForPackage("com.google.ar.lens") != null
-@@ -57,6 +59,15 @@ fun QuickstepPreferences() {
+@@ -57,6 +59,41 @@ fun QuickstepPreferences() {
                  label = stringResource(id = R.string.recents_clear_all),
              )
          }
++        val clearAllPillEnabled by prefs.clearAllPillEnabled.observeAsState()
++        PreferenceGroup(
++            heading = stringResource(id = R.string.clear_all_button_label)
++        ) {
++            SwitchPreference(
++                adapter = prefs.clearAllPillEnabled.getAdapter(),
++                label = stringResource(id = R.string.clear_all_pill_label),
++            )
++            AnimatedVisibility(
++                visible = clearAllPillEnabled,
++                enter = expandVertically() + fadeIn(),
++                exit = shrinkVertically() + fadeOut()
++            ) {
++                SliderPreference(
++                    label = stringResource(id = R.string.clear_all_pill_radius_label),
++                    adapter = prefs.clearAllPillRadius.getAdapter(),
++                    valueRange = 0f..1f,
++                    step = 0.05f,
++                    showAsPercentage = true
++                )
++            }
++            SwitchPreference(
++                adapter = prefs.clearAllShowIcon.getAdapter(),
++                label = stringResource(id = R.string.clear_all_show_icon_label),
++            )
++        }
 +        PreferenceGroup(heading = stringResource(id = R.string.general_label)) {
 +            SliderPreference(
 +                label = stringResource(id = R.string.recents_background_opacity),
@@ -1855,7 +2093,7 @@ index e24ee43..7264f53 100644
 @@ -2900,6 +2912,6 @@ public class CellLayout extends ViewGroup {
      }
  
-     public boolean isRegionVacant(int x, int y, spanX, spanY) {
+     public boolean isRegionVacant(int x, int y, int spanX, int spanY) {
 -        return mOccupied.isRegionVacant(x, y, spanX, spanY);
 +        return mOccupied.isRegionVacant(x, y, spanX, spanY) || PreferenceExtensionsKt.firstBlocking(mPreferenceManager2.getAllowWidgetOverlap());
      }
