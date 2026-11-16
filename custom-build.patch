@@ -87,10 +87,10 @@ index 992164c..c784740 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..92ac948 100644
+index 1d81cd7..5294c46 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
-@@ -31,8 +31,18 @@
+@@ -31,8 +31,20 @@
      <string name="home_screen_rotation_label">Home Screen Rotation</string>
      <string name="home_screen_rotaton_description">When device is rotated.</string>
      <string name="auto_add_shortcuts_label">Add New Apps to Home Screen</string>
@@ -99,6 +99,8 @@ index 1d81cd7..92ac948 100644
 +    <string name="workspace_padding">Workspace Padding</string>
 +    <string name="workspace_padding_horizontal">Horizontal Padding</string>
 +    <string name="workspace_padding_vertical">Vertical Padding</string>
++    <string name="workspace_padding_top">Top Padding</string>
++    <string name="workspace_padding_bottom">Bottom Padding</string>
 +    <string name="force_resizable_widgets">Force Resizable Widgets</string>
 +    <string name="drawer_padding">Drawer Padding</string>
 +    <string name="misc_label">Misc</string>
@@ -111,7 +113,7 @@ index 1d81cd7..92ac948 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -49,6 +59,8 @@
+@@ -49,6 +61,8 @@
      <string name="icon_size">Icon Size</string>
      <string name="label_size">Label Size</string>
      <string name="show_home_labels">Show Labels</string>
@@ -120,7 +122,7 @@ index 1d81cd7..92ac948 100644
      <string name="notification_dots">Notification Dots</string>
      <string name="smartspace_preferences">Preferences</string>
      <string name="about_label">About</string>
-@@ -209,6 +221,11 @@
+@@ -209,6 +223,11 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -298,7 +300,7 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..62e41c2 100644
+index 6d6af7f..5c441a1 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 @@ -178,6 +178,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
@@ -320,7 +322,7 @@ index 6d6af7f..62e41c2 100644
      val drawerIconSizeFactor = preference(
          key = floatPreferencesKey(name = "drawer_icon_size_factor"),
          defaultValue = resourceProvider.getFloat(R.dimen.config_default_drawer_icon_size_factor),
-@@ -208,6 +220,78 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +220,84 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -342,8 +344,14 @@ index 6d6af7f..62e41c2 100644
 +        onSet = { reloadHelper.recreate() },
 +    )
 +
-+    val workspacePaddingVertical = preference(
-+        key = intPreferencesKey(name = "workspace_padding_vertical"),
++    val workspacePaddingTop = preference(
++        key = intPreferencesKey(name = "workspace_padding_top"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val workspacePaddingBottom = preference(
++        key = intPreferencesKey(name = "workspace_padding_bottom"),
 +        defaultValue = 0,
 +        onSet = { reloadHelper.recreate() },
 +    )
@@ -522,10 +530,15 @@ index 83e4f7f..8f5c1ec 100644
 +    }
  }
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
-index 3820d3b..7c98666 100644
+index 3820d3b..ac7e2c8 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
-@@ -127,6 +127,26 @@ fun AppDrawerPreferences() {
+@@ -123,15 +123,35 @@ fun AppDrawerPreferences() {
+                 adapter = prefs2.drawerCellHeightFactor.getAdapter(),
+                 label = stringResource(id = R.string.row_height_label),
+                 valueRange = 0.7F..1.5F,
+-                step = 0.1F,
++                step = 0.01f,
                  showAsPercentage = true
              )
          }
@@ -552,6 +565,21 @@ index 3820d3b..7c98666 100644
          PreferenceGroup(heading = stringResource(id = R.string.icons)) {
              SliderPreference(
                  label = stringResource(id = R.string.icon_size),
+                 adapter = prefs2.drawerIconSizeFactor.getAdapter(),
+-                step = 0.1f,
++                step = 0.01f,
+                 valueRange = 0.5F..1.5F,
+                 showAsPercentage = true,
+             )
+@@ -148,7 +168,7 @@ fun AppDrawerPreferences() {
+                 SliderPreference(
+                     label = stringResource(id = R.string.label_size),
+                     adapter = prefs2.drawerIconLabelSizeFactor.getAdapter(),
+-                    step = 0.1F,
++                    step = 0.01f,
+                     valueRange = 0.5F..1.5F,
+                     showAsPercentage = true,
+                 )
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 deleted file mode 100644
 index 703cc2f..0000000
@@ -681,7 +709,7 @@ index f60565f..35467f5 100644
              ThemePreference()
              AccentColorPreference()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-index 547a84f..226e249 100644
+index 547a84f..ee67d69 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 @@ -62,6 +62,10 @@ fun HomeScreenPreferences() {
@@ -695,7 +723,7 @@ index 547a84f..226e249 100644
              val columns by prefs.workspaceColumns.getAdapter()
              val rows by prefs.workspaceRows.getAdapter()
              NavigationActionPreference(
-@@ -70,6 +74,20 @@ fun HomeScreenPreferences() {
+@@ -70,6 +74,26 @@ fun HomeScreenPreferences() {
                  subtitle = stringResource(id = R.string.x_by_y, columns, rows),
              )
          }
@@ -707,8 +735,14 @@ index 547a84f..226e249 100644
 +                valueRange = -48..48,
 +            )
 +            SliderPreference(
-+                label = stringResource(id = R.string.workspace_padding_vertical),
-+                adapter = prefs2.workspacePaddingVertical.getAdapter(),
++                label = stringResource(id = R.string.workspace_padding_top),
++                adapter = prefs2.workspacePaddingTop.getAdapter(),
++                step = 1,
++                valueRange = -48..48,
++            )
++            SliderPreference(
++                label = stringResource(id = R.string.workspace_padding_bottom),
++                adapter = prefs2.workspacePaddingBottom.getAdapter(),
 +                step = 1,
 +                valueRange = -48..48,
 +            )
@@ -716,7 +750,16 @@ index 547a84f..226e249 100644
          PreferenceGroup(heading = stringResource(id = R.string.status_bar_label)) {
              val showStatusBarAdapter = prefs2.showStatusBar.getAdapter()
              SwitchPreference(
-@@ -117,6 +135,17 @@ fun HomeScreenPreferences() {
+@@ -108,7 +132,7 @@ fun HomeScreenPreferences() {
+             SliderPreference(
+                 label = stringResource(id = R.string.icon_size),
+                 adapter = prefs2.homeIconSizeFactor.getAdapter(),
+-                step = 0.1f,
++                step = 0.01f,
+                 valueRange = 0.5F..1.5F,
+                 showAsPercentage = true,
+             )
+@@ -117,6 +141,17 @@ fun HomeScreenPreferences() {
                  adapter = homeScreenLabelsAdapter,
                  label = stringResource(id = R.string.show_home_labels),
              )
@@ -734,7 +777,14 @@ index 547a84f..226e249 100644
              AnimatedVisibility(
                  visible = homeScreenLabelsAdapter.state.value,
                  enter = expandVertically() + fadeIn(),
-@@ -131,8 +160,12 @@ fun HomeScreenPreferences() {
+@@ -125,14 +160,18 @@ fun HomeScreenPreferences() {
+                 SliderPreference(
+                     label = stringResource(id = R.string.label_size),
+                     adapter = prefs2.homeIconLabelSizeFactor.getAdapter(),
+-                    step = 0.1f,
++                    step = 0.01f,
+                     valueRange = 0.5F..1.5F,
+                     showAsPercentage = true,
                  )
              }
          }
@@ -1314,31 +1364,34 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..40bde52 100644
+index 720f3d8..9041658 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -72,6 +72,9 @@ public class DeviceProfile {
+@@ -72,6 +72,10 @@ public class DeviceProfile {
      public final boolean isTwoPanels;
      public final boolean allowRotation;
  
 +    private final int mExtraWorkspacePaddingHpx;
-+    private final int mExtraWorkspacePaddingVpx;
++    private final int mExtraWorkspacePaddingTopPx;
++    private final int mExtraWorkspacePaddingBottomPx;
 +
      // Device properties in current orientation
      public final boolean isLandscape;
      public final boolean isMultiWindowMode;
-@@ -226,6 +229,10 @@ public class DeviceProfile {
+@@ -226,6 +230,12 @@ public class DeviceProfile {
  
          PreferenceManager2 preferenceManager2 = PreferenceManager2.INSTANCE.get(context);
          allAppsCellHeightMultiplier = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerCellHeightFactor());
 +        mExtraWorkspacePaddingHpx = Utilities.dpToPx(
 +                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingHorizontal()));
-+        mExtraWorkspacePaddingVpx = Utilities.dpToPx(
-+                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingVertical()));
++        mExtraWorkspacePaddingTopPx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingTop()));
++        mExtraWorkspacePaddingBottomPx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingBottom()));
  
          this.inv = inv;
          this.isLandscape = windowBounds.isLandscape();
-@@ -436,6 +443,11 @@ public class DeviceProfile {
+@@ -436,6 +446,11 @@ public class DeviceProfile {
              // Recalculate the available dimensions using the new hotseat size.
              updateAvailableDimensions(res);
          }
@@ -1350,7 +1403,7 @@ index 720f3d8..40bde52 100644
          updateWorkspacePadding();
  
          flingToDeleteThresholdVelocity = res.getDimensionPixelSize(
-@@ -459,6 +471,8 @@ public class DeviceProfile {
+@@ -459,6 +474,8 @@ public class DeviceProfile {
                      + hotseatBarBottomPaddingPx + (isScalableGrid ? 0 : hotseatExtraVerticalSize)
                      + hotseatBarSizeExtraSpacePx;
          }
@@ -1359,7 +1412,7 @@ index 720f3d8..40bde52 100644
      }
  
      private void setCellLayoutBorderSpacing(int borderSpacing) {
-@@ -700,7 +714,9 @@ public class DeviceProfile {
+@@ -700,7 +717,9 @@ public class DeviceProfile {
      private void updateFolderCellSize(float scale, Resources res) {
          float invIconSizeDp = isVerticalBarLayout() ? inv.landscapeIconSize : inv.iconSize;
          folderChildIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, scale));
@@ -1370,14 +1423,14 @@ index 720f3d8..40bde52 100644
          folderLabelTextSizePx = (int) (folderChildTextSizePx * folderLabelTextScale);
  
          int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-@@ -813,6 +829,10 @@ public class DeviceProfile {
+@@ -813,6 +832,10 @@ public class DeviceProfile {
                          paddingBottom);
              }
          }
 +        padding.left += mExtraWorkspacePaddingHpx;
 +        padding.right += mExtraWorkspacePaddingHpx;
-+        padding.top += mExtraWorkspacePaddingVpx;
-+        padding.bottom += mExtraWorkspacePaddingVpx;
++        padding.top += mExtraWorkspacePaddingTopPx;
++        padding.bottom += mExtraWorkspacePaddingBottomPx;
      }
  
      public Rect getHotseatLayoutPadding() {
