@@ -1324,10 +1324,10 @@ index dcb9334..6cc94ab 100644
      @JvmField val FolderDotColor = Accent2_50
 diff --git a/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
 new file mode 100644
-index 0000000..068c9ef
+index 0000000..5fc0c65
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
-@@ -0,0 +1,193 @@
+@@ -0,0 +1,216 @@
 +/*
 + * Copyright 2021, Lawnchair
 + *
@@ -1347,17 +1347,18 @@ index 0000000..068c9ef
 +package app.lawnchair.ui.popup
 +
 +import android.annotation.SuppressLint
-+import android.graphics.drawable.GradientDrawable
++import android.graphics.Color
++import android.os.Handler
++import android.os.Looper
 +import android.view.Gravity
++import android.view.MotionEvent
 +import android.view.View
 +import android.widget.FrameLayout
 +import android.widget.LinearLayout
 +import android.widget.TextView
 +import app.lawnchair.LawnchairLauncher
-+import app.lawnchair.theme.color.ColorTokens
 +import com.android.launcher3.CellLayout
 +import com.android.launcher3.model.data.ItemInfo
-+import com.android.launcher3.util.Themes
 +
 +@SuppressLint("ClickableViewAccessibility")
 +class FinePositioningController private constructor(
@@ -1371,7 +1372,6 @@ index 0000000..068c9ef
 +    private val origCellY = info.cellY
 +    private val origSpanX = info.spanX
 +    private val origSpanY = info.spanY
-+    private val textColor = Themes.getAttrColor(context, android.R.attr.textColorPrimary)
 +
 +    init {
 +        isClickable = true
@@ -1379,18 +1379,46 @@ index 0000000..068c9ef
 +        addView(buildPanel(), generateDefaultLayoutParams())
 +    }
 +
-+    private fun button(text: String, onClick: () -> Unit): TextView {
++    private fun button(text: String, repeat: Boolean = false, onClick: () -> Unit): TextView {
 +        val density = resources.displayMetrics.density
 +        return TextView(context).apply {
 +            this.text = text
 +            textSize = 20f
 +            setTypeface(typeface, android.graphics.Typeface.BOLD)
 +            gravity = Gravity.CENTER
-+            setTextColor(textColor)
++            setTextColor(Color.WHITE)
++            setShadowLayer(5f * density, 0f, 2f * density, 0xB3000000.toInt())
 +            setOnClickListener { onClick() }
++            if (repeat) {
++                attachHoldRepeat(this, onClick)
++            }
 +            layoutParams = LinearLayout.LayoutParams(
 +                (64 * density).toInt(), (52 * density).toInt()
 +            )
++        }
++    }
++
++    private fun attachHoldRepeat(button: TextView, onClick: () -> Unit) {
++        val handler = Handler(Looper.getMainLooper())
++        var repeating: Runnable? = null
++        button.setOnTouchListener { v, event ->
++            when (event.actionMasked) {
++                MotionEvent.ACTION_DOWN -> {
++                    val r = object : Runnable {
++                        override fun run() {
++                            onClick()
++                            handler.postDelayed(this, 100)
++                        }
++                    }
++                    repeating = r
++                    handler.postDelayed(r, 350)
++                }
++                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
++                    repeating?.let { handler.removeCallbacks(it) }
++                    repeating = null
++                }
++            }
++            false
 +        }
 +    }
 +
@@ -1406,25 +1434,20 @@ index 0000000..068c9ef
 +
 +    private fun buildPanel(): View {
 +        val density = resources.displayMetrics.density
-+        val panelBackground = GradientDrawable()
-+        panelBackground.cornerRadius = 24f * density
-+        panelBackground.setColor(ColorTokens.PopupColorPrimary.resolveColor(context))
 +        return LinearLayout(context).apply {
 +            orientation = LinearLayout.VERTICAL
 +            setGravity(Gravity.CENTER_HORIZONTAL)
-+            background = panelBackground
-+            elevation = 8f * density
 +            setPadding((12 * density).toInt(), (12 * density).toInt(),
 +                (12 * density).toInt(), (12 * density).toInt())
-+            addView(row(button("▲") { move(0, -1) }))
++            addView(row(button("▲", repeat = true) { move(0, -1) }))
 +            addView(row(
-+                button("◀") { move(-1, 0) },
-+                button("▼") { move(0, 1) },
-+                button("▶") { move(1, 0) },
++                button("◀", repeat = true) { move(-1, 0) },
++                button("▼", repeat = true) { move(0, 1) },
++                button("▶", repeat = true) { move(1, 0) },
 +            ))
 +            addView(row(
-+                button("−") { resize(false) },
-+                button("+") { resize(true) },
++                button("−", repeat = true) { resize(false) },
++                button("+", repeat = true) { resize(true) },
 +            ))
 +            addView(row(
 +                button("✓") { confirm() },
