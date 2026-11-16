@@ -2038,7 +2038,7 @@ index 3048ff8..4b9c215 100644
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
 diff --git a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
-index 19cad53..6944d0f 100644
+index 19cad53..b44bf2c 100644
 --- a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
 +++ b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
 @@ -24,6 +24,7 @@ import static com.android.launcher3.Utilities.mapBoundToRange;
@@ -2061,7 +2061,7 @@ index 19cad53..6944d0f 100644
  import com.android.launcher3.anim.AnimatorPlaybackController;
  import com.android.launcher3.anim.SpringAnimationBuilder;
  import com.android.launcher3.dragndrop.DragLayer;
-+import com.android.launcher3.folder.FolderInfo;
++import com.android.launcher3.model.data.FolderInfo;
 +import com.android.launcher3.model.data.WorkspaceItemInfo;
  import com.android.launcher3.states.StateAnimationConfig;
  import com.android.launcher3.util.DynamicResource;
