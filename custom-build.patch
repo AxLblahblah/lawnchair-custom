@@ -1324,7 +1324,7 @@ index dcb9334..6cc94ab 100644
      @JvmField val FolderDotColor = Accent2_50
 diff --git a/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
 new file mode 100644
-index 0000000..370cc19
+index 0000000..7424999
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
 @@ -0,0 +1,193 @@
@@ -1397,7 +1397,7 @@ index 0000000..370cc19
 +    private fun row(vararg buttons: TextView): LinearLayout {
 +        return LinearLayout(context).apply {
 +            orientation = LinearLayout.HORIZONTAL
-+            gravity = Gravity.CENTER
++            setGravity(Gravity.CENTER)
 +            for (button in buttons) {
 +                addView(button)
 +            }
@@ -1411,7 +1411,7 @@ index 0000000..370cc19
 +        background.setColor(ColorTokens.PopupColorPrimary.resolveColor(context))
 +        return LinearLayout(context).apply {
 +            orientation = LinearLayout.VERTICAL
-+            gravity = Gravity.CENTER_HORIZONTAL
++            setGravity(Gravity.CENTER_HORIZONTAL)
 +            background = background
 +            elevation = 8f * density
 +            setPadding((12 * density).toInt(), (12 * density).toInt(),
