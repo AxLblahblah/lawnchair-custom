@@ -1324,7 +1324,7 @@ index dcb9334..6cc94ab 100644
      @JvmField val FolderDotColor = Accent2_50
 diff --git a/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
 new file mode 100644
-index 0000000..7424999
+index 0000000..068c9ef
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/ui/popup/FinePositioningController.kt
 @@ -0,0 +1,193 @@
@@ -1406,13 +1406,13 @@ index 0000000..7424999
 +
 +    private fun buildPanel(): View {
 +        val density = resources.displayMetrics.density
-+        val background = GradientDrawable()
-+        background.cornerRadius = 24f * density
-+        background.setColor(ColorTokens.PopupColorPrimary.resolveColor(context))
++        val panelBackground = GradientDrawable()
++        panelBackground.cornerRadius = 24f * density
++        panelBackground.setColor(ColorTokens.PopupColorPrimary.resolveColor(context))
 +        return LinearLayout(context).apply {
 +            orientation = LinearLayout.VERTICAL
 +            setGravity(Gravity.CENTER_HORIZONTAL)
-+            background = background
++            background = panelBackground
 +            elevation = 8f * density
 +            setPadding((12 * density).toInt(), (12 * density).toInt(),
 +                (12 * density).toInt(), (12 * density).toInt())
