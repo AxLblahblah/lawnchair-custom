@@ -87,10 +87,10 @@ index 992164c..c784740 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..5294c46 100644
+index 1d81cd7..4236a0f 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
-@@ -31,8 +31,20 @@
+@@ -31,8 +31,22 @@
      <string name="home_screen_rotation_label">Home Screen Rotation</string>
      <string name="home_screen_rotaton_description">When device is rotated.</string>
      <string name="auto_add_shortcuts_label">Add New Apps to Home Screen</string>
@@ -102,6 +102,8 @@ index 1d81cd7..5294c46 100644
 +    <string name="workspace_padding_top">Top Padding</string>
 +    <string name="workspace_padding_bottom">Bottom Padding</string>
 +    <string name="force_resizable_widgets">Force Resizable Widgets</string>
++    <string name="widget_horizontal_offset">Widget Horizontal Offset</string>
++    <string name="widget_vertical_offset">Widget Vertical Offset</string>
 +    <string name="drawer_padding">Drawer Padding</string>
 +    <string name="misc_label">Misc</string>
 +    <string name="hide_drawer_scrollbar">Hide Scrollbar</string>
@@ -113,7 +115,7 @@ index 1d81cd7..5294c46 100644
      <string name="app_drawer_label">App Drawer</string>
      <string name="app_drawer_description">Hidden Apps, Column Count, Icons</string>
      <string name="folders_label">Folders</string>
-@@ -49,6 +61,8 @@
+@@ -49,6 +63,8 @@
      <string name="icon_size">Icon Size</string>
      <string name="label_size">Label Size</string>
      <string name="show_home_labels">Show Labels</string>
@@ -122,7 +124,7 @@ index 1d81cd7..5294c46 100644
      <string name="notification_dots">Notification Dots</string>
      <string name="smartspace_preferences">Preferences</string>
      <string name="about_label">About</string>
-@@ -209,6 +223,11 @@
+@@ -209,6 +225,11 @@
      <string name="icon_pack_external_picker">Open External Picker</string>
      <string name="recents_actions_label">Quick Actions</string>
      <string name="recents_clear_all">Clear All</string>
@@ -300,7 +302,7 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..5c441a1 100644
+index 6d6af7f..6bf5be2 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 @@ -178,6 +178,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
@@ -322,7 +324,7 @@ index 6d6af7f..5c441a1 100644
      val drawerIconSizeFactor = preference(
          key = floatPreferencesKey(name = "drawer_icon_size_factor"),
          defaultValue = resourceProvider.getFloat(R.dimen.config_default_drawer_icon_size_factor),
-@@ -208,6 +220,84 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -208,6 +220,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -336,6 +338,18 @@ index 6d6af7f..5c441a1 100644
 +        key = booleanPreferencesKey(name = "force_resizable_widgets"),
 +        defaultValue = context.resources.getBoolean(R.bool.config_default_force_resizable_widgets),
 +        onSet = { reloadHelper.restart() },
++    )
++
++    val widgetHorizontalOffset = preference(
++        key = intPreferencesKey(name = "widget_horizontal_offset"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
++    )
++
++    val widgetVerticalOffset = preference(
++        key = intPreferencesKey(name = "widget_vertical_offset"),
++        defaultValue = 0,
++        onSet = { reloadHelper.recreate() },
 +    )
 +
 +    val workspacePaddingHorizontal = preference(
@@ -709,7 +723,7 @@ index f60565f..35467f5 100644
              ThemePreference()
              AccentColorPreference()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-index 547a84f..ee67d69 100644
+index 547a84f..e094393 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 @@ -62,6 +62,10 @@ fun HomeScreenPreferences() {
@@ -777,7 +791,7 @@ index 547a84f..ee67d69 100644
              AnimatedVisibility(
                  visible = homeScreenLabelsAdapter.state.value,
                  enter = expandVertically() + fadeIn(),
-@@ -125,14 +160,18 @@ fun HomeScreenPreferences() {
+@@ -125,14 +160,30 @@ fun HomeScreenPreferences() {
                  SliderPreference(
                      label = stringResource(id = R.string.label_size),
                      adapter = prefs2.homeIconLabelSizeFactor.getAdapter(),
@@ -794,6 +808,18 @@ index 547a84f..ee67d69 100644
 +            SwitchPreference(
 +                adapter = prefs2.forceResizableWidgets.getAdapter(),
 +                label = stringResource(id = R.string.force_resizable_widgets),
++            )
++            SliderPreference(
++                label = stringResource(id = R.string.widget_horizontal_offset),
++                adapter = prefs2.widgetHorizontalOffset.getAdapter(),
++                step = 1,
++                valueRange = -16..16,
++            )
++            SliderPreference(
++                label = stringResource(id = R.string.widget_vertical_offset),
++                adapter = prefs2.widgetVerticalOffset.getAdapter(),
++                step = 1,
++                valueRange = -16..16,
 +            )
 +            if (!Utilities.ATLEAST_S) {
                  SwitchPreference(
@@ -1364,21 +1390,23 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..4ce182f 100644
+index 720f3d8..8534c00 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -72,6 +72,10 @@ public class DeviceProfile {
+@@ -72,6 +72,12 @@ public class DeviceProfile {
      public final boolean isTwoPanels;
      public final boolean allowRotation;
  
 +    private final int mExtraWorkspacePaddingHpx;
 +    private final int mExtraWorkspacePaddingTopPx;
 +    private final int mExtraWorkspacePaddingBottomPx;
++    private final int mWidgetHorizontalOffsetPx;
++    private final int mWidgetVerticalOffsetPx;
 +
      // Device properties in current orientation
      public final boolean isLandscape;
      public final boolean isMultiWindowMode;
-@@ -226,6 +230,12 @@ public class DeviceProfile {
+@@ -226,6 +232,16 @@ public class DeviceProfile {
  
          PreferenceManager2 preferenceManager2 = PreferenceManager2.INSTANCE.get(context);
          allAppsCellHeightMultiplier = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerCellHeightFactor());
@@ -1388,10 +1416,14 @@ index 720f3d8..4ce182f 100644
 +                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingTop()));
 +        mExtraWorkspacePaddingBottomPx = Utilities.dpToPx(
 +                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWorkspacePaddingBottom()));
++        mWidgetHorizontalOffsetPx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWidgetHorizontalOffset()));
++        mWidgetVerticalOffsetPx = Utilities.dpToPx(
++                PreferenceExtensionsKt.firstBlocking(preferenceManager2.getWidgetVerticalOffset()));
  
          this.inv = inv;
          this.isLandscape = windowBounds.isLandscape();
-@@ -436,6 +446,11 @@ public class DeviceProfile {
+@@ -436,6 +452,11 @@ public class DeviceProfile {
              // Recalculate the available dimensions using the new hotseat size.
              updateAvailableDimensions(res);
          }
@@ -1403,7 +1435,7 @@ index 720f3d8..4ce182f 100644
          updateWorkspacePadding();
  
          flingToDeleteThresholdVelocity = res.getDimensionPixelSize(
-@@ -459,6 +474,8 @@ public class DeviceProfile {
+@@ -459,6 +480,8 @@ public class DeviceProfile {
                      + hotseatBarBottomPaddingPx + (isScalableGrid ? 0 : hotseatExtraVerticalSize)
                      + hotseatBarSizeExtraSpacePx;
          }
@@ -1412,7 +1444,7 @@ index 720f3d8..4ce182f 100644
      }
  
      private void setCellLayoutBorderSpacing(int borderSpacing) {
-@@ -469,6 +486,16 @@ public class DeviceProfile {
+@@ -469,6 +492,18 @@ public class DeviceProfile {
       * We inset the widget padding added by the system and instead rely on the border spacing
       * between cells to create reliable consistency between widgets
       */
@@ -1422,14 +1454,16 @@ index 720f3d8..4ce182f 100644
 +     */
 +    public void addWidgetAlignInset(Rect out) {
 +        int horizontal = Math.max(0, (cellWidthPx - iconSizePx) / 2);
-+        out.left += horizontal;
-+        out.right += horizontal;
++        out.left += horizontal + mWidgetHorizontalOffsetPx;
++        out.right += horizontal + mWidgetHorizontalOffsetPx;
++        out.top += mWidgetVerticalOffsetPx;
++        out.bottom += mWidgetVerticalOffsetPx;
 +    }
 +
      public boolean shouldInsetWidgets() {
          Rect widgetPadding = inv.defaultWidgetPadding;
  
-@@ -700,7 +727,9 @@ public class DeviceProfile {
+@@ -700,7 +735,9 @@ public class DeviceProfile {
      private void updateFolderCellSize(float scale, Resources res) {
          float invIconSizeDp = isVerticalBarLayout() ? inv.landscapeIconSize : inv.iconSize;
          folderChildIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, scale));
@@ -1440,7 +1474,7 @@ index 720f3d8..4ce182f 100644
          folderLabelTextSizePx = (int) (folderChildTextSizePx * folderLabelTextScale);
  
          int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-@@ -813,6 +842,10 @@ public class DeviceProfile {
+@@ -813,6 +850,10 @@ public class DeviceProfile {
                          paddingBottom);
              }
          }
