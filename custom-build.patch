@@ -1658,7 +1658,7 @@ index fad3617..d6a481f 100644
          numShownHotseatIcons = p.numShownHotseatIcons;
          numDatabaseHotseatIcons = p.numDatabaseHotseatIcons;
 diff --git a/src/com/android/launcher3/ShortcutAndWidgetContainer.java b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
-index 519b63d..152f574 100644
+index 519b63d..abeda83 100644
 --- a/src/com/android/launcher3/ShortcutAndWidgetContainer.java
 +++ b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
 @@ -133,6 +133,15 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
@@ -1666,7 +1666,7 @@ index 519b63d..152f574 100644
              lp.setup(mCellWidth, mCellHeight, invertLayoutHorizontally(), mCountX, mCountY,
                      dp.appWidgetScale.x, dp.appWidgetScale.y, mBorderSpacing, mTempRect);
 +            Rect alignPadding = dp.getWidgetAlignPadding();
-+            child.setClipChildren(false);
++            ((ViewGroup) child).setClipChildren(false);
 +            if (child.getPaddingLeft() != alignPadding.left
 +                    || child.getPaddingTop() != alignPadding.top
 +                    || child.getPaddingRight() != alignPadding.right
