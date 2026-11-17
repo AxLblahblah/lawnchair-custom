@@ -1502,7 +1502,7 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..5dfafb0 100644
+index 720f3d8..c35fdec 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
 @@ -72,6 +72,14 @@ public class DeviceProfile {
@@ -1560,17 +1560,16 @@ index 720f3d8..5dfafb0 100644
      }
  
      private void setCellLayoutBorderSpacing(int borderSpacing) {
-@@ -469,6 +496,21 @@ public class DeviceProfile {
+@@ -469,6 +496,20 @@ public class DeviceProfile {
       * We inset the widget padding added by the system and instead rely on the border spacing
       * between cells to create reliable consistency between widgets
       */
 +    /**
-+     * The padding a workspace widget needs so its content aligns with the icon grid: icons
-+     * are drawn inset within their cells, while widgets otherwise fill the raw cell edges.
++     * The extra padding applied to workspace widgets from the user's offset sliders.
 +     */
 +    public Rect getWidgetAlignPadding() {
 +        mWidgetAlignPadding.setEmpty();
-+        int horizontal = Math.max(0, (cellWidthPx - iconSizePx) / 2 + mWidgetHorizontalOffsetPx);
++        int horizontal = Math.max(0, mWidgetHorizontalOffsetPx);
 +        int vertical = Math.max(0, mWidgetVerticalOffsetPx);
 +        mWidgetAlignPadding.left += horizontal;
 +        mWidgetAlignPadding.right += horizontal;
@@ -1582,7 +1581,7 @@ index 720f3d8..5dfafb0 100644
      public boolean shouldInsetWidgets() {
          Rect widgetPadding = inv.defaultWidgetPadding;
  
-@@ -610,7 +652,8 @@ public class DeviceProfile {
+@@ -610,7 +651,8 @@ public class DeviceProfile {
          iconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, iconScale));
          float invIconTextSizeSp = isLandscape ? inv.landscapeIconTextSize : inv.iconTextSize;
          iconTextSizePx = (int) (pxFromSp(invIconTextSizeSp, mMetrics) * iconScale);
@@ -1592,7 +1591,7 @@ index 720f3d8..5dfafb0 100644
  
          setCellLayoutBorderSpacing((int) (cellLayoutBorderSpacingOriginalPx * scale));
  
-@@ -700,7 +743,9 @@ public class DeviceProfile {
+@@ -700,7 +742,9 @@ public class DeviceProfile {
      private void updateFolderCellSize(float scale, Resources res) {
          float invIconSizeDp = isVerticalBarLayout() ? inv.landscapeIconSize : inv.iconSize;
          folderChildIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, scale));
@@ -1603,7 +1602,7 @@ index 720f3d8..5dfafb0 100644
          folderLabelTextSizePx = (int) (folderChildTextSizePx * folderLabelTextScale);
  
          int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-@@ -813,6 +858,10 @@ public class DeviceProfile {
+@@ -813,6 +857,10 @@ public class DeviceProfile {
                          paddingBottom);
              }
          }
