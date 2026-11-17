@@ -1534,34 +1534,14 @@ index fad3617..d6a481f 100644
          numShownHotseatIcons = p.numShownHotseatIcons;
          numDatabaseHotseatIcons = p.numDatabaseHotseatIcons;
 diff --git a/src/com/android/launcher3/ShortcutAndWidgetContainer.java b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
-index 519b63d..4bc7f96 100644
+index 519b63d..bffdb92 100644
 --- a/src/com/android/launcher3/ShortcutAndWidgetContainer.java
 +++ b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
-@@ -22,6 +22,7 @@ import static com.android.launcher3.CellLayout.FOLDER;
- import static com.android.launcher3.CellLayout.WORKSPACE;
- 
- import android.app.WallpaperManager;
-+import android.appwidget.AppWidgetProviderInfo;
- import android.content.Context;
- import android.graphics.Rect;
- import android.view.MotionEvent;
-@@ -133,6 +134,26 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
+@@ -133,6 +133,14 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
              ((LauncherAppWidgetHostView) child).getWidgetInset(dp, mTempRect);
              lp.setup(mCellWidth, mCellHeight, invertLayoutHorizontally(), mCountX, mCountY,
                      dp.appWidgetScale.x, dp.appWidgetScale.y, mBorderSpacing, mTempRect);
 +            Rect alignPadding = dp.getWidgetAlignPadding();
-+            AppWidgetProviderInfo info = ((LauncherAppWidgetHostView) child).getAppWidgetInfo();
-+            float density = child.getResources().getDisplayMetrics().density;
-+            if (info != null && info.minWidth > 0
-+                    && (lp.width - alignPadding.left - alignPadding.right) / density < info.minWidth) {
-+                alignPadding.left = 0;
-+                alignPadding.right = 0;
-+            }
-+            if (info != null && info.minHeight > 0
-+                    && (lp.height - alignPadding.top - alignPadding.bottom) / density < info.minHeight) {
-+                alignPadding.top = 0;
-+                alignPadding.bottom = 0;
-+            }
 +            if (child.getPaddingLeft() != alignPadding.left
 +                    || child.getPaddingTop() != alignPadding.top
 +                    || child.getPaddingRight() != alignPadding.right
