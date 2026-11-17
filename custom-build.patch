@@ -1502,7 +1502,7 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..c35fdec 100644
+index 720f3d8..40ead8d 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
 @@ -72,6 +72,14 @@ public class DeviceProfile {
@@ -1569,8 +1569,8 @@ index 720f3d8..c35fdec 100644
 +     */
 +    public Rect getWidgetAlignPadding() {
 +        mWidgetAlignPadding.setEmpty();
-+        int horizontal = Math.max(0, mWidgetHorizontalOffsetPx);
-+        int vertical = Math.max(0, mWidgetVerticalOffsetPx);
++        int horizontal = mWidgetHorizontalOffsetPx;
++        int vertical = mWidgetVerticalOffsetPx;
 +        mWidgetAlignPadding.left += horizontal;
 +        mWidgetAlignPadding.right += horizontal;
 +        mWidgetAlignPadding.top += vertical;
@@ -1658,14 +1658,15 @@ index fad3617..d6a481f 100644
          numShownHotseatIcons = p.numShownHotseatIcons;
          numDatabaseHotseatIcons = p.numDatabaseHotseatIcons;
 diff --git a/src/com/android/launcher3/ShortcutAndWidgetContainer.java b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
-index 519b63d..bffdb92 100644
+index 519b63d..152f574 100644
 --- a/src/com/android/launcher3/ShortcutAndWidgetContainer.java
 +++ b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
-@@ -133,6 +133,14 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
+@@ -133,6 +133,15 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
              ((LauncherAppWidgetHostView) child).getWidgetInset(dp, mTempRect);
              lp.setup(mCellWidth, mCellHeight, invertLayoutHorizontally(), mCountX, mCountY,
                      dp.appWidgetScale.x, dp.appWidgetScale.y, mBorderSpacing, mTempRect);
 +            Rect alignPadding = dp.getWidgetAlignPadding();
++            child.setClipChildren(false);
 +            if (child.getPaddingLeft() != alignPadding.left
 +                    || child.getPaddingTop() != alignPadding.top
 +                    || child.getPaddingRight() != alignPadding.right
