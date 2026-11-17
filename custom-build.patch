@@ -1390,10 +1390,10 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..8534c00 100644
+index 720f3d8..95eaaa4 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
-@@ -72,6 +72,12 @@ public class DeviceProfile {
+@@ -72,6 +72,13 @@ public class DeviceProfile {
      public final boolean isTwoPanels;
      public final boolean allowRotation;
  
@@ -1402,11 +1402,12 @@ index 720f3d8..8534c00 100644
 +    private final int mExtraWorkspacePaddingBottomPx;
 +    private final int mWidgetHorizontalOffsetPx;
 +    private final int mWidgetVerticalOffsetPx;
++    private final Rect mWidgetAlignPadding = new Rect();
 +
      // Device properties in current orientation
      public final boolean isLandscape;
      public final boolean isMultiWindowMode;
-@@ -226,6 +232,16 @@ public class DeviceProfile {
+@@ -226,6 +233,16 @@ public class DeviceProfile {
  
          PreferenceManager2 preferenceManager2 = PreferenceManager2.INSTANCE.get(context);
          allAppsCellHeightMultiplier = PreferenceExtensionsKt.firstBlocking(preferenceManager2.getDrawerCellHeightFactor());
@@ -1423,7 +1424,7 @@ index 720f3d8..8534c00 100644
  
          this.inv = inv;
          this.isLandscape = windowBounds.isLandscape();
-@@ -436,6 +452,11 @@ public class DeviceProfile {
+@@ -436,6 +453,11 @@ public class DeviceProfile {
              // Recalculate the available dimensions using the new hotseat size.
              updateAvailableDimensions(res);
          }
@@ -1435,7 +1436,7 @@ index 720f3d8..8534c00 100644
          updateWorkspacePadding();
  
          flingToDeleteThresholdVelocity = res.getDimensionPixelSize(
-@@ -459,6 +480,8 @@ public class DeviceProfile {
+@@ -459,6 +481,8 @@ public class DeviceProfile {
                      + hotseatBarBottomPaddingPx + (isScalableGrid ? 0 : hotseatExtraVerticalSize)
                      + hotseatBarSizeExtraSpacePx;
          }
@@ -1444,26 +1445,29 @@ index 720f3d8..8534c00 100644
      }
  
      private void setCellLayoutBorderSpacing(int borderSpacing) {
-@@ -469,6 +492,18 @@ public class DeviceProfile {
+@@ -469,6 +493,21 @@ public class DeviceProfile {
       * We inset the widget padding added by the system and instead rely on the border spacing
       * between cells to create reliable consistency between widgets
       */
 +    /**
-+     * Adds the horizontal inset needed so that widget edges align with the icon grid: icons
-+     * are drawn inset within their cells, while widgets otherwise snap to the raw cell edges.
++     * The padding a workspace widget needs so its content aligns with the icon grid: icons
++     * are drawn inset within their cells, while widgets otherwise fill the raw cell edges.
 +     */
-+    public void addWidgetAlignInset(Rect out) {
-+        int horizontal = Math.max(0, (cellWidthPx - iconSizePx) / 2);
-+        out.left += horizontal + mWidgetHorizontalOffsetPx;
-+        out.right += horizontal + mWidgetHorizontalOffsetPx;
-+        out.top += mWidgetVerticalOffsetPx;
-+        out.bottom += mWidgetVerticalOffsetPx;
++    public Rect getWidgetAlignPadding() {
++        mWidgetAlignPadding.setEmpty();
++        int horizontal = Math.max(0, (cellWidthPx - iconSizePx) / 2 + mWidgetHorizontalOffsetPx);
++        int vertical = Math.max(0, mWidgetVerticalOffsetPx);
++        mWidgetAlignPadding.left += horizontal;
++        mWidgetAlignPadding.right += horizontal;
++        mWidgetAlignPadding.top += vertical;
++        mWidgetAlignPadding.bottom += vertical;
++        return mWidgetAlignPadding;
 +    }
 +
      public boolean shouldInsetWidgets() {
          Rect widgetPadding = inv.defaultWidgetPadding;
  
-@@ -700,7 +735,9 @@ public class DeviceProfile {
+@@ -700,7 +739,9 @@ public class DeviceProfile {
      private void updateFolderCellSize(float scale, Resources res) {
          float invIconSizeDp = isVerticalBarLayout() ? inv.landscapeIconSize : inv.iconSize;
          folderChildIconSizePx = Math.max(1, pxFromDp(invIconSizeDp, mMetrics, scale));
@@ -1474,7 +1478,7 @@ index 720f3d8..8534c00 100644
          folderLabelTextSizePx = (int) (folderChildTextSizePx * folderLabelTextScale);
  
          int textHeight = Utilities.calculateTextHeight(folderChildTextSizePx);
-@@ -813,6 +850,10 @@ public class DeviceProfile {
+@@ -813,6 +854,10 @@ public class DeviceProfile {
                          paddingBottom);
              }
          }
@@ -1529,6 +1533,25 @@ index fad3617..d6a481f 100644
          landscapeIconTextSize = p.landscapeIconTextSize;
          numShownHotseatIcons = p.numShownHotseatIcons;
          numDatabaseHotseatIcons = p.numDatabaseHotseatIcons;
+diff --git a/src/com/android/launcher3/ShortcutAndWidgetContainer.java b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
+index 519b63d..bffdb92 100644
+--- a/src/com/android/launcher3/ShortcutAndWidgetContainer.java
++++ b/src/com/android/launcher3/ShortcutAndWidgetContainer.java
+@@ -133,6 +133,14 @@ public class ShortcutAndWidgetContainer extends ViewGroup implements FolderIcon.
+             ((LauncherAppWidgetHostView) child).getWidgetInset(dp, mTempRect);
+             lp.setup(mCellWidth, mCellHeight, invertLayoutHorizontally(), mCountX, mCountY,
+                     dp.appWidgetScale.x, dp.appWidgetScale.y, mBorderSpacing, mTempRect);
++            Rect alignPadding = dp.getWidgetAlignPadding();
++            if (child.getPaddingLeft() != alignPadding.left
++                    || child.getPaddingTop() != alignPadding.top
++                    || child.getPaddingRight() != alignPadding.right
++                    || child.getPaddingBottom() != alignPadding.bottom) {
++                child.setPadding(alignPadding.left, alignPadding.top,
++                        alignPadding.right, alignPadding.bottom);
++            }
+         } else {
+             lp.setup(mCellWidth, mCellHeight, invertLayoutHorizontally(), mCountX, mCountY,
+                     mBorderSpacing, null);
 diff --git a/src/com/android/launcher3/allapps/AllAppsContainerView.java b/src/com/android/launcher3/allapps/AllAppsContainerView.java
 index a7c75ad..d70ed8f 100644
 --- a/src/com/android/launcher3/allapps/AllAppsContainerView.java
@@ -1785,28 +1808,3 @@ index d77d99d..846a6ad 100644
      }
  
      /**
-diff --git a/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java b/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java
-index 4c2dec0..656c5d4 100644
---- a/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java
-+++ b/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java
-@@ -243,13 +243,14 @@ public abstract class NavigableAppWidgetHostView extends AppWidgetHostView
-     public void getWidgetInset(DeviceProfile grid, Rect out) {
-         if (!grid.shouldInsetWidgets()) {
-             out.setEmpty();
--            return;
--        }
--        AppWidgetProviderInfo info = getAppWidgetInfo();
--        if (info == null) {
--            out.set(grid.inv.defaultWidgetPadding);
-         } else {
--            AppWidgetHostView.getDefaultPaddingForWidget(getContext(), info.provider, out);
-+            AppWidgetProviderInfo info = getAppWidgetInfo();
-+            if (info == null) {
-+                out.set(grid.inv.defaultWidgetPadding);
-+            } else {
-+                AppWidgetHostView.getDefaultPaddingForWidget(getContext(), info.provider, out);
-+            }
-         }
-+        grid.addWidgetAlignInset(out);
-     }
- }
