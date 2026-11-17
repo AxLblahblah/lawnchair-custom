@@ -953,7 +953,7 @@ index 958111b..8d1777d 100644
              heading = stringResource(id = R.string.window_corner_radius_label),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/components/TextFieldPreference.kt b/lawnchair/src/app/lawnchair/ui/preferences/components/TextFieldPreference.kt
 new file mode 100644
-index 0000000..7871160
+index 0000000..bcf22fb
 --- /dev/null
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/components/TextFieldPreference.kt
 @@ -0,0 +1,80 @@
@@ -978,8 +978,8 @@ index 0000000..7871160
 +import androidx.compose.foundation.clickable
 +import androidx.compose.foundation.layout.fillMaxWidth
 +import androidx.compose.foundation.layout.padding
++import androidx.compose.material.OutlinedTextField
 +import androidx.compose.material3.OutlinedButton
-+import androidx.compose.material3.OutlinedTextField
 +import androidx.compose.material3.Text
 +import androidx.compose.runtime.Composable
 +import androidx.compose.runtime.getValue
