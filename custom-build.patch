@@ -1184,7 +1184,7 @@ index 3048ff843f..8bdf3d7642 100644
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
 diff --git a/quickstep/src/com/android/launcher3/statehandlers/DepthController.java b/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
-index eb6788e463..47c8301485 100644
+index eb6788e463..ba43cd1155 100644
 --- a/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
 +++ b/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
 @@ -23,6 +23,8 @@ import static com.android.launcher3.states.StateAnimationConfig.SKIP_DEPTH_CONTR
@@ -1200,25 +1200,32 @@ index eb6788e463..47c8301485 100644
      };
  
      private final Launcher mLauncher;
-+    private final boolean mLowRamDevice;
++    private Boolean mLowRamDevice;
      /**
       * Blur radius when completely zoomed out, in pixels.
       */
-@@ -137,6 +140,8 @@ public class DepthController implements StateHandler<LauncherState>,
- 
-     public DepthController(Launcher l) {
-         mLauncher = l;
-+        ActivityManager am = (ActivityManager) l.getSystemService(Context.ACTIVITY_SERVICE);
-+        mLowRamDevice = am != null && am.isLowRamDevice();
+@@ -260,6 +263,15 @@ public class DepthController implements StateHandler<LauncherState>,
+         setDepth(depth, false);
      }
  
-     private void ensureDependencies() {
-@@ -277,7 +282,7 @@ public class DepthController implements StateHandler<LauncherState>,
++    private boolean isLowRamDevice() {
++        if (mLowRamDevice == null) {
++            ActivityManager am =
++                    (ActivityManager) mLauncher.getSystemService(Context.ACTIVITY_SERVICE);
++            mLowRamDevice = am != null && am.isLowRamDevice();
++        }
++        return mLowRamDevice;
++    }
++
+     private void setDepth(float depth, boolean force) {
+         depth = Utilities.boundToRange(depth, 0, 1);
+         // Round out the depth to dedupe frequent, non-perceptable updates
+@@ -277,7 +289,7 @@ public class DepthController implements StateHandler<LauncherState>,
      }
  
      private boolean dispatchTransactionSurface(float depth) {
 -        boolean supportsBlur = BlurUtils.supportsBlursOnWindows();
-+        boolean supportsBlur = BlurUtils.supportsBlursOnWindows() && !mLowRamDevice;
++        boolean supportsBlur = BlurUtils.supportsBlursOnWindows() && !isLowRamDevice();
          if (supportsBlur && (mSurface == null || !mSurface.isValid())) {
              return false;
          }
