@@ -1184,7 +1184,7 @@ index 3048ff843f..8bdf3d7642 100644
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
 diff --git a/quickstep/src/com/android/launcher3/statehandlers/DepthController.java b/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
-index eb6788e463..ba43cd1155 100644
+index eb6788e463..9439ad89e5 100644
 --- a/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
 +++ b/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
 @@ -23,6 +23,8 @@ import static com.android.launcher3.states.StateAnimationConfig.SKIP_DEPTH_CONTR
@@ -1204,7 +1204,7 @@ index eb6788e463..ba43cd1155 100644
      /**
       * Blur radius when completely zoomed out, in pixels.
       */
-@@ -260,6 +263,15 @@ public class DepthController implements StateHandler<LauncherState>,
+@@ -260,10 +263,19 @@ public class DepthController implements StateHandler<LauncherState>,
          setDepth(depth, false);
      }
  
@@ -1220,6 +1220,11 @@ index eb6788e463..ba43cd1155 100644
      private void setDepth(float depth, boolean force) {
          depth = Utilities.boundToRange(depth, 0, 1);
          // Round out the depth to dedupe frequent, non-perceptable updates
+-        int depthI = (int) (depth * 256);
++        int depthI = (int) (depth * (isLowRamDevice() ? 32 : 256));
+         float depthF = depthI / 256f;
+         if (!Utilities.ATLEAST_R) {
+             return;
 @@ -277,7 +289,7 @@ public class DepthController implements StateHandler<LauncherState>,
      }
  
@@ -1370,9 +1375,18 @@ index a0fcfe9002..b2bbade780 100644
              InstantAppResolver.newInstance(activity).isInstantApp(activity,
                   view.getTask().getTopComponent().getPackageName())
 diff --git a/res/values/config.xml b/res/values/config.xml
-index 04c359ede3..23b3a53435 100644
+index 04c359ede3..398d4eb0ad 100644
 --- a/res/values/config.xml
 +++ b/res/values/config.xml
+@@ -112,7 +112,7 @@
+     <item type="id" name="overview_panel"/>
+ 
+     <!-- Whether to enable background preloading of task thumbnails. -->
+-    <bool name="config_enableTaskSnapshotPreloading">true</bool>
++    <bool name="config_enableTaskSnapshotPreloading">false</bool>
+ 
+     <!-- Configuration resources -->
+     <item name="all_apps_spring_damping_ratio" type="dimen" format="float">0.75</item>
 @@ -121,14 +121,14 @@
      <item name="dismiss_task_trans_y_damping_ratio" type="dimen" format="float">0.73</item>
      <item name="dismiss_task_trans_y_stiffness" type="dimen" format="float">800</item>
@@ -1751,6 +1765,34 @@ index a7c75ad826..d70ed8f41b 100644
              mAH[i].applyPadding();
          }
          mHeaderTop = mHeader.getTop();
+diff --git a/src/com/android/launcher3/config/FeatureFlags.java b/src/com/android/launcher3/config/FeatureFlags.java
+index 0b7e910112..0b69c08846 100644
+--- a/src/com/android/launcher3/config/FeatureFlags.java
++++ b/src/com/android/launcher3/config/FeatureFlags.java
+@@ -17,6 +17,7 @@
+ package com.android.launcher3.config;
+ 
+ import android.content.Context;
++import android.os.SystemProperties;
+ 
+ import com.android.launcher3.BuildConfig;
+ import com.android.launcher3.Utilities;
+@@ -92,10 +93,13 @@ public final class FeatureFlags {
+             "KEYGUARD_ANIMATION", false, "Enable animation for keyguard going away on wallpaper");
+ 
+     public static final BooleanFlag ADAPTIVE_ICON_WINDOW_ANIM = getDebugFlag(
+-            "ADAPTIVE_ICON_WINDOW_ANIM", true, "Use adaptive icons for window animations.");
++            "ADAPTIVE_ICON_WINDOW_ANIM", !SystemProperties.getBoolean("ro.config.low_ram", false),
++            "Use adaptive icons for window animations.");
+ 
+     public static final BooleanFlag ENABLE_QUICKSTEP_LIVE_TILE = getDebugFlag(
+-            "ENABLE_QUICKSTEP_LIVE_TILE", Utilities.ATLEAST_S, "Enable live tile in Quickstep overview");
++            "ENABLE_QUICKSTEP_LIVE_TILE", Utilities.ATLEAST_S
++                    && !SystemProperties.getBoolean("ro.config.low_ram", false),
++            "Enable live tile in Quickstep overview");
+ 
+     public static final BooleanFlag ENABLE_QUICKSTEP_WIDGET_APP_START = getDebugFlag(
+             "ENABLE_QUICKSTEP_WIDGET_APP_START", Utilities.ATLEAST_S,
 diff --git a/src/com/android/launcher3/folder/Folder.java b/src/com/android/launcher3/folder/Folder.java
 index 7dccc62141..eb5183b8ff 100644
 --- a/src/com/android/launcher3/folder/Folder.java
