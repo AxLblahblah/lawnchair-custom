@@ -1234,6 +1234,23 @@ index eb6788e463..9439ad89e5 100644
          if (supportsBlur && (mSurface == null || !mSurface.isValid())) {
              return false;
          }
+diff --git a/quickstep/src/com/android/quickstep/AbsSwipeUpHandler.java b/quickstep/src/com/android/quickstep/AbsSwipeUpHandler.java
+index d8e90af73a..9c67c5942a 100644
+--- a/quickstep/src/com/android/quickstep/AbsSwipeUpHandler.java
++++ b/quickstep/src/com/android/quickstep/AbsSwipeUpHandler.java
+@@ -1787,8 +1787,11 @@ public abstract class AbsSwipeUpHandler<T extends StatefulActivity<S>,
+      * Registers a callback to run when the activity is ready.
+      */
+     public void initWhenReady() {
++        RecentsModel recentsModel = RecentsModel.INSTANCE.get(mContext);
+         // Preload the plan
+-        RecentsModel.INSTANCE.get(mContext).getTasks(null);
++        recentsModel.getTasks(null);
++        // Kick off thumbnail loads early so overview doesn't show color placeholders
++        recentsModel.preloadThumbnails();
+ 
+         mActivityInitListener.register();
+     }
 diff --git a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
 index 19cad53bb1..b44bf2c7a5 100644
 --- a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
@@ -1298,6 +1315,21 @@ index 19cad53bb1..b44bf2c7a5 100644
      }
  
      @Override
+diff --git a/quickstep/src/com/android/quickstep/RecentsModel.java b/quickstep/src/com/android/quickstep/RecentsModel.java
+index c6c3c64f01..2c386dc1df 100644
+--- a/quickstep/src/com/android/quickstep/RecentsModel.java
++++ b/quickstep/src/com/android/quickstep/RecentsModel.java
+@@ -142,7 +142,10 @@ public class RecentsModel extends TaskStackChangeListener implements IconChangeL
+             // Skip if we aren't preloading
+             return;
+         }
++        preloadThumbnails();
++    }
+ 
++    public void preloadThumbnails() {
+         int currentUserId = Process.myUserHandle().getIdentifier();
+         if (!checkCurrentOrManagedUserId(currentUserId, mContext)) {
+             // Skip if we are not the current user
 diff --git a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
 index e75d751582..4187b05915 100644
 --- a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
@@ -1374,10 +1406,59 @@ index a0fcfe9002..b2bbade780 100644
      TaskShortcutFactory INSTALL = (activity, view) ->
              InstantAppResolver.newInstance(activity).isInstantApp(activity,
                   view.getTask().getTopComponent().getPackageName())
+diff --git a/quickstep/src/com/android/quickstep/views/TaskThumbnailView.java b/quickstep/src/com/android/quickstep/views/TaskThumbnailView.java
+index c70596d88e..85d1156664 100644
+--- a/quickstep/src/com/android/quickstep/views/TaskThumbnailView.java
++++ b/quickstep/src/com/android/quickstep/views/TaskThumbnailView.java
+@@ -23,6 +23,7 @@ import static com.android.launcher3.Utilities.comp;
+ import static com.android.launcher3.config.FeatureFlags.ENABLE_QUICKSTEP_LIVE_TILE;
+ import static com.android.systemui.shared.system.WindowManagerWrapper.WINDOWING_MODE_FULLSCREEN;
+ 
++import android.app.ActivityManager;
+ import android.content.Context;
+ import android.graphics.Bitmap;
+ import android.graphics.BitmapShader;
+@@ -84,6 +85,7 @@ public class TaskThumbnailView extends View implements PluginListener<OverviewSc
+     private final BaseActivity mActivity;
+     private TaskOverlay mOverlay;
+     private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
++    private final boolean mLowRamDevice;
+     private final Paint mBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+     private final Paint mClearPaint = new Paint();
+     private final Paint mDimmingPaintAfterClearing = new Paint();
+@@ -123,6 +125,9 @@ public class TaskThumbnailView extends View implements PluginListener<OverviewSc
+ 
+         mDimColor = RecentsView.getForegroundScrimDimColor(context);
+         mDimmingPaintAfterClearing.setColor(mDimColor);
++        ActivityManager am =
++                (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
++        mLowRamDevice = am != null && am.isLowRamDevice();
+     }
+ 
+     /**
+@@ -133,6 +138,9 @@ public class TaskThumbnailView extends View implements PluginListener<OverviewSc
+         getTaskOverlay().reset();
+         mTask = task;
+         int color = task == null ? Color.BLACK : task.colorBackground | 0xFF000000;
++        if (mLowRamDevice) {
++            color = ColorUtils.blendARGB(Color.BLACK, color, 0.25f);
++        }
+         mPaint.setColor(color);
+         mBackgroundPaint.setColor(color);
+     }
 diff --git a/res/values/config.xml b/res/values/config.xml
-index 04c359ede3..23b3a53435 100644
+index 04c359ede3..398d4eb0ad 100644
 --- a/res/values/config.xml
 +++ b/res/values/config.xml
+@@ -112,7 +112,7 @@
+     <item type="id" name="overview_panel"/>
+ 
+     <!-- Whether to enable background preloading of task thumbnails. -->
+-    <bool name="config_enableTaskSnapshotPreloading">true</bool>
++    <bool name="config_enableTaskSnapshotPreloading">false</bool>
+ 
+     <!-- Configuration resources -->
+     <item name="all_apps_spring_damping_ratio" type="dimen" format="float">0.75</item>
 @@ -121,14 +121,14 @@
      <item name="dismiss_task_trans_y_damping_ratio" type="dimen" format="float">0.73</item>
      <item name="dismiss_task_trans_y_stiffness" type="dimen" format="float">800</item>
