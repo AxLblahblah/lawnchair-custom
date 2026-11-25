@@ -1,5 +1,5 @@
 diff --git a/build.gradle b/build.gradle
-index f3f9c1d..c055843 100644
+index f3f9c1da91..c05584362d 100644
 --- a/build.gradle
 +++ b/build.gradle
 @@ -33,6 +33,14 @@ allprojects {
@@ -60,7 +60,7 @@ index f3f9c1d..c055843 100644
      implementation "com.google.accompanist:accompanist-drawablepainter:$accompanist_version"
      implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
 diff --git a/gradle.properties b/gradle.properties
-index 7e12249..2b1d256 100644
+index 7e12249065..2b1d2569f1 100644
 --- a/gradle.properties
 +++ b/gradle.properties
 @@ -2,7 +2,7 @@
@@ -73,7 +73,7 @@ index 7e12249..2b1d256 100644
  GRADLE_CLASS_PATH=com.android.tools.build:gradle:4.0.0
  
 diff --git a/lawnchair/res/values/config.xml b/lawnchair/res/values/config.xml
-index 992164c..c784740 100644
+index 992164ce52..c7847404dd 100644
 --- a/lawnchair/res/values/config.xml
 +++ b/lawnchair/res/values/config.xml
 @@ -42,6 +42,9 @@
@@ -87,7 +87,7 @@ index 992164c..c784740 100644
      <bool name="config_default_dock_search_bar_force_website">false</bool>
      <bool name="config_default_rounded_widgets">true</bool>
 diff --git a/lawnchair/res/values/strings.xml b/lawnchair/res/values/strings.xml
-index 1d81cd7..4236a0f 100644
+index 1d81cd7af8..4236a0ffa1 100644
 --- a/lawnchair/res/values/strings.xml
 +++ b/lawnchair/res/values/strings.xml
 @@ -31,8 +31,22 @@
@@ -137,7 +137,7 @@ index 1d81cd7..4236a0f 100644
      <string name="experimental_features_label">Experimental Features</string>
      <string name="icon_picker_label">Per-App Icon Customization</string>
 diff --git a/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt b/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt
-index 931ecd0..14583eb 100644
+index 931ecd03ec..14583ebdc9 100644
 --- a/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt
 +++ b/lawnchair/src/app/lawnchair/DeviceProfileOverrides.kt
 @@ -30,6 +30,7 @@ class DeviceProfileOverrides(context: Context) {
@@ -168,10 +168,10 @@ index 931ecd0..14583eb 100644
              idp.allAppsIconTextSize *= (if (enableAllAppsIconText) allAppsIconTextSizeFactor else 0f)
  
 diff --git a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
-index 3046dc6..0b3b213 100644
+index c4026c90d3..6fd271c4a2 100644
 --- a/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
 +++ b/lawnchair/src/app/lawnchair/LawnchairLauncher.kt
-@@ -249,7 +249,7 @@ class LawnchairLauncher : QuickstepLauncher(), LifecycleOwner,
+@@ -258,7 +258,7 @@ class LawnchairLauncher : QuickstepLauncher(), LifecycleOwner,
      override fun getSupportedShortcuts(): Stream<SystemShortcut.Factory<*>> {
          return Stream.concat(
              super.getSupportedShortcuts(),
@@ -181,7 +181,7 @@ index 3046dc6..0b3b213 100644
      }
  
 diff --git a/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt b/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt
-index 7e15e32..752fa66 100644
+index 7e15e32bc7..752fa66d77 100644
 --- a/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt
 +++ b/lawnchair/src/app/lawnchair/overview/LawnchairOverviewActionsView.kt
 @@ -1,14 +1,19 @@
@@ -288,7 +288,7 @@ index 7e15e32..752fa66 100644
  
      private fun createSpace(): View {
 diff --git a/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt b/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt
-index 3931998..03389e8 100644
+index 3931998c71..03389e8cff 100644
 --- a/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt
 +++ b/lawnchair/src/app/lawnchair/preferences/PreferenceManager.kt
 @@ -77,6 +77,9 @@ class PreferenceManager private constructor(private val context: Context) : Base
@@ -302,10 +302,10 @@ index 3931998..03389e8 100644
      init {
          sp.registerOnSharedPreferenceChangeListener(this)
 diff --git a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-index 6d6af7f..6bf5be2 100644
+index 53e2676c1b..1934da56e9 100644
 --- a/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
 +++ b/lawnchair/src/app/lawnchair/preferences2/PreferenceManager2.kt
-@@ -178,6 +178,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -174,6 +174,18 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -324,7 +324,7 @@ index 6d6af7f..6bf5be2 100644
      val drawerIconSizeFactor = preference(
          key = floatPreferencesKey(name = "drawer_icon_size_factor"),
          defaultValue = resourceProvider.getFloat(R.dimen.config_default_drawer_icon_size_factor),
-@@ -208,6 +220,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
+@@ -204,6 +216,96 @@ class PreferenceManager2(private val context: Context) : PreferenceManager {
          onSet = { reloadHelper.reloadGrid() },
      )
  
@@ -422,7 +422,7 @@ index 6d6af7f..6bf5be2 100644
          key = booleanPreferencesKey(name = "enable_fuzzy_search"),
          defaultValue = context.resources.getBoolean(R.bool.config_default_enable_fuzzy_search),
 diff --git a/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt b/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt
-index f77b29c..2d30e9f 100644
+index f77b29ceea..2d30e9fb25 100644
 --- a/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt
 +++ b/lawnchair/src/app/lawnchair/theme/color/ColorTokenUtils.kt
 @@ -1,4 +1,30 @@
@@ -457,7 +457,7 @@ index f77b29c..2d30e9f 100644
 +    transform(this, prefs)
 +}
 diff --git a/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt b/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt
-index dcb9334..6cc94ab 100644
+index dcb9334f16..6cc94abba1 100644
 --- a/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt
 +++ b/lawnchair/src/app/lawnchair/theme/color/ColorTokens.kt
 @@ -3,6 +3,7 @@ package app.lawnchair.theme.color
@@ -480,7 +480,7 @@ index dcb9334..6cc94ab 100644
  
      @JvmField val FolderDotColor = Accent2_50
 diff --git a/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt b/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
-index 83e4f7f..8f5c1ec 100644
+index 83e4f7f74e..8f5c1ec3db 100644
 --- a/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
 +++ b/lawnchair/src/app/lawnchair/ui/popup/LawnchairShortcut.kt
 @@ -2,6 +2,7 @@ package app.lawnchair.ui.popup
@@ -544,7 +544,7 @@ index 83e4f7f..8f5c1ec 100644
 +    }
  }
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
-index 3820d3b..ac7e2c8 100644
+index 3820d3b082..ac7e2c8ed7 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/AppDrawerPreferences.kt
 @@ -123,15 +123,35 @@ fun AppDrawerPreferences() {
@@ -596,7 +596,7 @@ index 3820d3b..ac7e2c8 100644
                  )
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 deleted file mode 100644
-index 703cc2f..0000000
+index 703cc2fca3..0000000000
 --- a/lawnchair/src/app/lawnchair/ui/preferences/DockPreferences.kt
 +++ /dev/null
 @@ -1,84 +0,0 @@
@@ -685,7 +685,7 @@ index 703cc2f..0000000
 -    }
 -}
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
-index f60565f..35467f5 100644
+index f60565fa5c..35467f55b4 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/GeneralPreferences.kt
 @@ -60,6 +60,10 @@ fun GeneralPreferences() {
@@ -723,7 +723,7 @@ index f60565f..35467f5 100644
              ThemePreference()
              AccentColorPreference()
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
-index 547a84f..e094393 100644
+index 547a84ffeb..e094393852 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/HomeScreenPreferences.kt
 @@ -62,6 +62,10 @@ fun HomeScreenPreferences() {
@@ -826,7 +826,7 @@ index 547a84f..e094393 100644
                      adapter = prefs2.roundedWidgets.getAdapter(),
                      label = stringResource(id = R.string.force_rounded_widgets),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
-index 330e77f..0e20830 100644
+index 330e77f598..0e20830cbe 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/Preferences.kt
 @@ -40,7 +40,6 @@ object Routes {
@@ -846,7 +846,7 @@ index 330e77f..0e20830 100644
                          folderGraph(route = subRoute(Routes.FOLDERS))
                          quickstepGraph(route = subRoute(Routes.QUICKSTEP))
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt b/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
-index 734821f..72b9326 100644
+index 734821f1c8..72b9326485 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/PreferencesDashboard.kt
 @@ -49,13 +49,6 @@ fun PreferencesDashboard() {
@@ -864,7 +864,7 @@ index 734821f..72b9326 100644
              label = stringResource(R.string.app_drawer_label),
              description = stringResource(R.string.app_drawer_description),
 diff --git a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
-index 958111b..8d1777d 100644
+index 958111b8d0..8d1777dd2e 100644
 --- a/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
 +++ b/lawnchair/src/app/lawnchair/ui/preferences/QuickstepPreferences.kt
 @@ -10,6 +10,7 @@ import androidx.navigation.NavGraphBuilder
@@ -926,10 +926,18 @@ index 958111b..8d1777d 100644
          PreferenceGroup(
              heading = stringResource(id = R.string.window_corner_radius_label),
 diff --git a/quickstep/src/com/android/launcher3/QuickstepTransitionManager.java b/quickstep/src/com/android/launcher3/QuickstepTransitionManager.java
-index 3048ff8..4b9c215 100644
+index 3048ff843f..8bdf3d7642 100644
 --- a/quickstep/src/com/android/launcher3/QuickstepTransitionManager.java
 +++ b/quickstep/src/com/android/launcher3/QuickstepTransitionManager.java
-@@ -97,6 +97,9 @@ import com.android.quickstep.SystemUiProxy;
+@@ -52,6 +52,7 @@ import android.animation.AnimatorListenerAdapter;
+ import android.animation.AnimatorSet;
+ import android.animation.ObjectAnimator;
+ import android.animation.ValueAnimator;
++import android.app.ActivityManager;
+ import android.content.Context;
+ import android.content.pm.PackageManager;
+ import android.content.res.Resources;
+@@ -97,6 +98,9 @@ import com.android.quickstep.SystemUiProxy;
  import com.android.quickstep.TaskViewUtils;
  import com.android.quickstep.util.MultiValueUpdateListener;
  import com.android.quickstep.util.RemoteAnimationProvider;
@@ -939,43 +947,54 @@ index 3048ff8..4b9c215 100644
  import com.android.quickstep.util.SurfaceTransactionApplier;
  import com.android.quickstep.util.WorkspaceRevealAnim;
  import com.android.quickstep.views.FloatingWidgetView;
-@@ -224,6 +227,9 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -224,6 +228,10 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
      // Will never be larger than MAX_NUM_TASKS
      private LinkedHashMap<Integer, Pair<Integer, Integer>> mTaskStartParams;
  
 +    private final float mAppOpenSpeed;
 +    private final float mAppCloseSpeed;
++    private final boolean mLowRamDevice;
 +
      public QuickstepTransitionManager(Context context) {
          mLauncher = Launcher.cast(Launcher.getLauncher(context));
          mDragLayer = mLauncher.getDragLayer();
-@@ -231,6 +237,10 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -231,6 +239,12 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
          mHandler = new Handler(Looper.getMainLooper());
          mDeviceProfile = mLauncher.getDeviceProfile();
  
 +        PreferenceManager2 prefs2 = PreferenceManager2.getInstance(mLauncher);
 +        mAppOpenSpeed = PreferenceExtensionsKt.firstBlocking(prefs2.getAppOpenAnimationSpeed());
 +        mAppCloseSpeed = PreferenceExtensionsKt.firstBlocking(prefs2.getAppCloseAnimationSpeed());
++        ActivityManager am = (ActivityManager) mLauncher.getSystemService(Context.ACTIVITY_SERVICE);
++        mLowRamDevice = am != null && am.isLowRamDevice();
 +
          Resources res = mLauncher.getResources();
          mContentScale = res.getFloat(R.dimen.content_scale);
          mClosingWindowTransY = res.getDimensionPixelSize(R.dimen.closing_window_trans_y);
-@@ -257,6 +267,14 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -257,6 +271,22 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
          mDeviceProfile = dp;
      }
  
 +    private long scaleOpenDuration(long duration) {
-+        return (long) (duration / Math.max(0.1f, mAppOpenSpeed));
++        float speed = mAppOpenSpeed;
++        if (mLowRamDevice) {
++            speed = Math.max(1.25f, speed);
++        }
++        return (long) (duration / Math.max(0.1f, speed));
 +    }
 +
 +    private long scaleCloseDuration(long duration) {
-+        return (long) (duration / Math.max(0.1f, mAppCloseSpeed));
++        float speed = mAppCloseSpeed;
++        if (mLowRamDevice) {
++            speed = Math.max(1.5f, speed);
++        }
++        return (long) (duration / Math.max(0.1f, speed));
 +    }
 +
      /**
       * @return ActivityOptions with remote animations that controls how the window of the opening
       * targets are displayed.
-@@ -271,8 +289,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -271,8 +301,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
          // Note that this duration is a guess as we do not know if the animation will be a
          // recents launch or not for sure until we know the opening app targets.
          long duration = fromRecents
@@ -986,7 +1005,7 @@ index 3048ff8..4b9c215 100644
  
          long statusBarTransitionDelay = duration - STATUS_BAR_TRANSITION_DURATION
                  - STATUS_BAR_TRANSITION_PRE_DELAY;
-@@ -632,7 +650,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -632,7 +662,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
  
          AnimatorSet animatorSet = new AnimatorSet();
          ValueAnimator appAnimator = ValueAnimator.ofFloat(0, 1);
@@ -995,7 +1014,16 @@ index 3048ff8..4b9c215 100644
          appAnimator.setInterpolator(LINEAR);
          appAnimator.addListener(floatingView);
          appAnimator.addListener(new AnimatorListenerAdapter() {
-@@ -657,27 +675,27 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -650,34 +680,35 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+                 : 0f;
+         final float finalWindowRadius = mDeviceProfile.isMultiWindowMode
+                 ? 0 : getWindowCornerRadius(mLauncher.getResources());
+-        final float finalShadowRadius = appTargetsAreTranslucent ? 0 : mMaxShadowRadius;
++        final float finalShadowRadius = appTargetsAreTranslucent || mLowRamDevice
++                ? 0 : mMaxShadowRadius;
+ 
+         MultiValueUpdateListener listener = new MultiValueUpdateListener() {
+             FloatProp mDx = new FloatProp(0, prop.dX, 0, prop.xDuration, AGGRESSIVE_EASE);
              FloatProp mDy = new FloatProp(0, prop.dY, 0, prop.yDuration, AGGRESSIVE_EASE);
  
              FloatProp mIconScaleToFitScreen = new FloatProp(prop.initialAppIconScale,
@@ -1031,7 +1059,7 @@ index 3048ff8..4b9c215 100644
                      ANIMATION_NAV_FADE_IN_DURATION, NAV_FADE_IN_INTERPOLATOR);
  
              @Override
-@@ -853,7 +871,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -853,7 +884,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
  
          AnimatorSet animatorSet = new AnimatorSet();
          ValueAnimator appAnimator = ValueAnimator.ofFloat(0, 1);
@@ -1040,7 +1068,7 @@ index 3048ff8..4b9c215 100644
          appAnimator.setInterpolator(LINEAR);
          appAnimator.addListener(floatingView);
          appAnimator.addListener(new AnimatorListenerAdapter() {
-@@ -875,26 +893,26 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -875,26 +906,26 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                      WIDGET_CROSSFADE_DURATION_MILLIS / 2 /* delay */,
                      WIDGET_CROSSFADE_DURATION_MILLIS / 2 /* duration */, LINEAR);
              final FloatProp mWindowRadius = new FloatProp(initialWindowRadius, finalWindowRadius,
@@ -1074,16 +1102,18 @@ index 3048ff8..4b9c215 100644
                      ANIMATION_NAV_FADE_IN_DURATION, NAV_FADE_IN_INTERPOLATOR);
  
              @Override
-@@ -957,7 +975,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -957,8 +988,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
          DepthController depthController = mLauncher.getDepthController();
          ObjectAnimator backgroundRadiusAnim = ObjectAnimator.ofFloat(depthController, DEPTH,
                  BACKGROUND_APP.getDepth(mLauncher))
 -                .setDuration(APP_LAUNCH_DURATION);
+-        if (allowBlurringLauncher) {
 +                .setDuration(scaleOpenDuration(APP_LAUNCH_DURATION));
-         if (allowBlurringLauncher) {
++        if (allowBlurringLauncher && !mLowRamDevice) {
              final SurfaceControl dimLayer;
              if (BlurUtils.supportsBlursOnWindows()) {
-@@ -1020,7 +1038,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+                 // Create a temporary effect layer, that lives on top of launcher, so we can apply
+@@ -1020,7 +1051,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                      new RemoteAnimationAdapterCompat(
                              new LauncherAnimationRunner(mHandler, mWallpaperOpenRunner,
                                      false /* startAtFrontOfQueue */),
@@ -1092,7 +1122,7 @@ index 3048ff8..4b9c215 100644
  
              if (KEYGUARD_ANIMATION.get()) {
                  mKeyguardGoingAwayRunner = createWallpaperOpenRunner(true /* fromUnlock */);
-@@ -1030,7 +1048,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -1030,7 +1061,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
                                  new LauncherAnimationRunner(
                                          mHandler, mKeyguardGoingAwayRunner,
                                          true /* startAtFrontOfQueue */),
@@ -1101,7 +1131,7 @@ index 3048ff8..4b9c215 100644
              }
  
              new ActivityCompat(mLauncher).registerRemoteAnimations(definition);
-@@ -1151,7 +1169,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -1151,10 +1182,11 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
          Point tmpPos = new Point();
          Rect tmpRect = new Rect();
          ValueAnimator closingAnimator = ValueAnimator.ofFloat(0, 1);
@@ -1109,8 +1139,13 @@ index 3048ff8..4b9c215 100644
 +        int duration = (int) scaleCloseDuration(CLOSING_TRANSITION_DURATION_MS);
          float windowCornerRadius = mDeviceProfile.isMultiWindowMode
                  ? 0 : getWindowCornerRadius(mLauncher.getResources());
-         float startShadowRadius = areAllTargetsTranslucent(appTargets) ? 0 : mMaxShadowRadius;
-@@ -1331,7 +1349,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+-        float startShadowRadius = areAllTargetsTranslucent(appTargets) ? 0 : mMaxShadowRadius;
++        float startShadowRadius = areAllTargetsTranslucent(appTargets) || mLowRamDevice
++                ? 0 : mMaxShadowRadius;
+         closingAnimator.setDuration(duration);
+         closingAnimator.addUpdateListener(new MultiValueUpdateListener() {
+             FloatProp mDy = new FloatProp(0, mClosingWindowTransY, 0, duration, DEACCEL_1_7);
+@@ -1331,7 +1363,8 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
  
                      if (mLauncher.isInState(LauncherState.ALL_APPS)) {
                          Pair<AnimatorSet, Runnable> contentAnimator =
@@ -1120,7 +1155,7 @@ index 3048ff8..4b9c215 100644
                          anim.play(contentAnimator.first);
                          anim.addListener(new AnimatorListenerAdapter() {
                              @Override
-@@ -1412,7 +1431,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -1412,7 +1445,7 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
      /**
       * Class that holds all the variables for the app open animation.
       */
@@ -1129,7 +1164,7 @@ index 3048ff8..4b9c215 100644
  
          public final int cropCenterXStart;
          public final int cropCenterYStart;
-@@ -1464,12 +1483,12 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
+@@ -1464,12 +1497,12 @@ public class QuickstepTransitionManager implements OnDeviceProfileChangeListener
  
              boolean useUpwardAnimation = launcherIconBounds.top > centerY
                      || Math.abs(dY) < dp.cellHeightPx;
@@ -1148,8 +1183,47 @@ index 3048ff8..4b9c215 100644
              iconAlphaStart = hasSplashScreen && !hasDifferentAppIcon ? 0 : 1f;
  
              final int windowIconSize = ResourceUtils.getDimenByName("starting_surface_icon_size",
+diff --git a/quickstep/src/com/android/launcher3/statehandlers/DepthController.java b/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
+index eb6788e463..47c8301485 100644
+--- a/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
++++ b/quickstep/src/com/android/launcher3/statehandlers/DepthController.java
+@@ -23,6 +23,8 @@ import static com.android.launcher3.states.StateAnimationConfig.SKIP_DEPTH_CONTR
+ import android.animation.Animator;
+ import android.animation.AnimatorListenerAdapter;
+ import android.animation.ObjectAnimator;
++import android.app.ActivityManager;
++import android.content.Context;
+ import android.os.IBinder;
+ import android.os.SystemProperties;
+ import android.util.FloatProperty;
+@@ -111,6 +113,7 @@ public class DepthController implements StateHandler<LauncherState>,
+     };
+ 
+     private final Launcher mLauncher;
++    private final boolean mLowRamDevice;
+     /**
+      * Blur radius when completely zoomed out, in pixels.
+      */
+@@ -137,6 +140,8 @@ public class DepthController implements StateHandler<LauncherState>,
+ 
+     public DepthController(Launcher l) {
+         mLauncher = l;
++        ActivityManager am = (ActivityManager) l.getSystemService(Context.ACTIVITY_SERVICE);
++        mLowRamDevice = am != null && am.isLowRamDevice();
+     }
+ 
+     private void ensureDependencies() {
+@@ -277,7 +282,7 @@ public class DepthController implements StateHandler<LauncherState>,
+     }
+ 
+     private boolean dispatchTransactionSurface(float depth) {
+-        boolean supportsBlur = BlurUtils.supportsBlursOnWindows();
++        boolean supportsBlur = BlurUtils.supportsBlursOnWindows() && !mLowRamDevice;
+         if (supportsBlur && (mSurface == null || !mSurface.isValid())) {
+             return false;
+         }
 diff --git a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
-index 19cad53..b44bf2c 100644
+index 19cad53bb1..b44bf2c7a5 100644
 --- a/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
 +++ b/quickstep/src/com/android/quickstep/LauncherSwipeHandlerV2.java
 @@ -24,6 +24,7 @@ import static com.android.launcher3.Utilities.mapBoundToRange;
@@ -1213,7 +1287,7 @@ index 19cad53..b44bf2c 100644
  
      @Override
 diff --git a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
-index e75d751..4187b05 100644
+index e75d751582..4187b05915 100644
 --- a/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
 +++ b/quickstep/src/com/android/quickstep/TaskOverlayFactory.java
 @@ -136,6 +136,7 @@ public class TaskOverlayFactory implements ResourceBasedOverride {
@@ -1225,7 +1299,7 @@ index e75d751..4187b05 100644
              TaskShortcutFactory.PIN,
              TaskShortcutFactory.INSTALL,
 diff --git a/quickstep/src/com/android/quickstep/TaskShortcutFactory.java b/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
-index a0fcfe9..b2bbade 100644
+index a0fcfe9002..b2bbade780 100644
 --- a/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
 +++ b/quickstep/src/com/android/quickstep/TaskShortcutFactory.java
 @@ -30,6 +30,7 @@ import android.graphics.Rect;
@@ -1288,8 +1362,73 @@ index a0fcfe9..b2bbade 100644
      TaskShortcutFactory INSTALL = (activity, view) ->
              InstantAppResolver.newInstance(activity).isInstantApp(activity,
                   view.getTask().getTopComponent().getPackageName())
+diff --git a/res/values/config.xml b/res/values/config.xml
+index 04c359ede3..23b3a53435 100644
+--- a/res/values/config.xml
++++ b/res/values/config.xml
+@@ -121,14 +121,14 @@
+     <item name="dismiss_task_trans_y_damping_ratio" type="dimen" format="float">0.73</item>
+     <item name="dismiss_task_trans_y_stiffness" type="dimen" format="float">800</item>
+ 
+-    <item name="dismiss_task_trans_x_damping_ratio" type="dimen" format="float">0.73</item>
+-    <item name="dismiss_task_trans_x_stiffness" type="dimen" format="float">800</item>
++    <item name="dismiss_task_trans_x_damping_ratio" type="dimen" format="float">0.85</item>
++    <item name="dismiss_task_trans_x_stiffness" type="dimen" format="float">1000</item>
+ 
+     <item name="horizontal_spring_damping_ratio" type="dimen" format="float">0.8</item>
+     <item name="horizontal_spring_stiffness" type="dimen" format="float">250</item>
+ 
+-    <item name="swipe_up_rect_scale_damping_ratio" type="dimen" format="float">0.75</item>
+-    <item name="swipe_up_rect_scale_stiffness" type="dimen" format="float">200</item>
++    <item name="swipe_up_rect_scale_damping_ratio" type="dimen" format="float">0.9</item>
++    <item name="swipe_up_rect_scale_stiffness" type="dimen" format="float">400</item>
+ 
+     <item name="swipe_up_rect_xy_fling_friction" type="dimen" format="float">1.5</item>
+ 
+@@ -138,18 +138,18 @@
+     <item name="swipe_up_trans_y_dp"  type="dimen" format="float">4.5</item>
+     <item name="swipe_up_trans_y_dp_per_s" type="dimen" format="float">3</item>
+ 
+-    <item name="swipe_up_trans_y_damping" type="dimen" format="float">0.45</item>
+-    <item name="swipe_up_trans_y_stiffness" type="dimen" format="float">200</item>
++    <item name="swipe_up_trans_y_damping" type="dimen" format="float">0.85</item>
++    <item name="swipe_up_trans_y_stiffness" type="dimen" format="float">380</item>
+ 
+-    <item name="swipe_up_rect_xy_damping_ratio" type="dimen" format="float">0.8</item>
+-    <item name="swipe_up_rect_xy_stiffness" type="dimen" format="float">200</item>
++    <item name="swipe_up_rect_xy_damping_ratio" type="dimen" format="float">0.9</item>
++    <item name="swipe_up_rect_xy_stiffness" type="dimen" format="float">380</item>
+ 
+ 
+     <item name="swipe_up_rect_2_x_damping_ratio" type="dimen" format="float">1</item>
+-    <item name="swipe_up_rect_2_x_stiffness" type="dimen" format="float">250</item>
++    <item name="swipe_up_rect_2_x_stiffness" type="dimen" format="float">450</item>
+ 
+     <item name="swipe_up_rect_2_y_damping_ratio" type="dimen" format="float">1</item>
+-    <item name="swipe_up_rect_2_y_stiffness" type="dimen" format="float">600</item>
++    <item name="swipe_up_rect_2_y_stiffness" type="dimen" format="float">900</item>
+ 
+     <item name="swipe_up_rect_2_y_stiffness_low_swipe_multiplier" type="dimen" format="float">0.8</item>
+     <item name="swipe_up_low_swipe_duration_multiplier"  type="dimen" format="float">1</item>
+@@ -171,12 +171,12 @@
+     <item name="c2_d" type="dimen" format="float">1</item>
+ 
+ 
+-    <item name="staggered_damping_ratio" type="dimen" format="float">0.7</item>
+-    <item name="staggered_stiffness" type="dimen" format="float">150</item>
++    <item name="staggered_damping_ratio" type="dimen" format="float">0.85</item>
++    <item name="staggered_stiffness" type="dimen" format="float">300</item>
+     <dimen name="unlock_staggered_velocity_dp_per_s">4dp</dimen>
+ 
+-    <item name="hint_scale_damping_ratio" type="dimen" format="float">0.7</item>
+-    <item name="hint_scale_stiffness" type="dimen" format="float">200</item>
++    <item name="hint_scale_damping_ratio" type="dimen" format="float">0.85</item>
++    <item name="hint_scale_stiffness" type="dimen" format="float">380</item>
+     <dimen name="hint_scale_velocity_dp_per_s">0.3dp</dimen>
+ 
+     <!-- Swipe up to home related -->
 diff --git a/res/values/strings.xml b/res/values/strings.xml
-index d1774e5..bf52f31 100644
+index d1774e5a03..bf52f310bb 100644
 --- a/res/values/strings.xml
 +++ b/res/values/strings.xml
 @@ -420,4 +420,8 @@
@@ -1302,7 +1441,7 @@ index d1774e5..bf52f31 100644
 +    <string name="force_stop_no_root">Root access required</string>
  </resources>
 diff --git a/src/com/android/launcher3/BaseDraggingActivity.java b/src/com/android/launcher3/BaseDraggingActivity.java
-index 73ad802..7ba2822 100644
+index 73ad802249..7ba2822b6e 100644
 --- a/src/com/android/launcher3/BaseDraggingActivity.java
 +++ b/src/com/android/launcher3/BaseDraggingActivity.java
 @@ -46,6 +46,10 @@ import androidx.annotation.NonNull;
@@ -1329,7 +1468,7 @@ index 73ad802..7ba2822 100644
  
          // Prepare intent
 diff --git a/src/com/android/launcher3/CellLayout.java b/src/com/android/launcher3/CellLayout.java
-index e24ee43..7264f53 100644
+index e24ee43a03..7264f533c7 100644
 --- a/src/com/android/launcher3/CellLayout.java
 +++ b/src/com/android/launcher3/CellLayout.java
 @@ -58,6 +58,9 @@ import androidx.annotation.Nullable;
@@ -1390,7 +1529,7 @@ index e24ee43..7264f53 100644
      }
  }
 diff --git a/src/com/android/launcher3/DeviceProfile.java b/src/com/android/launcher3/DeviceProfile.java
-index 720f3d8..8534c00 100644
+index 720f3d8d72..8534c0045f 100644
 --- a/src/com/android/launcher3/DeviceProfile.java
 +++ b/src/com/android/launcher3/DeviceProfile.java
 @@ -72,6 +72,12 @@ public class DeviceProfile {
@@ -1486,7 +1625,7 @@ index 720f3d8..8534c00 100644
  
      public Rect getHotseatLayoutPadding() {
 diff --git a/src/com/android/launcher3/Hotseat.java b/src/com/android/launcher3/Hotseat.java
-index d5c71af..a39e3b0 100644
+index d5c71afa5f..a39e3b0dc4 100644
 --- a/src/com/android/launcher3/Hotseat.java
 +++ b/src/com/android/launcher3/Hotseat.java
 @@ -76,6 +76,19 @@ public class Hotseat extends CellLayout implements Insettable {
@@ -1510,7 +1649,7 @@ index d5c71af..a39e3b0 100644
  
      /**
 diff --git a/src/com/android/launcher3/InvariantDeviceProfile.java b/src/com/android/launcher3/InvariantDeviceProfile.java
-index fad3617..d6a481f 100644
+index fad3617985..d6a481f20d 100644
 --- a/src/com/android/launcher3/InvariantDeviceProfile.java
 +++ b/src/com/android/launcher3/InvariantDeviceProfile.java
 @@ -108,6 +108,7 @@ public class InvariantDeviceProfile {
@@ -1530,7 +1669,7 @@ index fad3617..d6a481f 100644
          numShownHotseatIcons = p.numShownHotseatIcons;
          numDatabaseHotseatIcons = p.numDatabaseHotseatIcons;
 diff --git a/src/com/android/launcher3/allapps/AllAppsContainerView.java b/src/com/android/launcher3/allapps/AllAppsContainerView.java
-index a7c75ad..d70ed8f 100644
+index a7c75ad826..d70ed8f41b 100644
 --- a/src/com/android/launcher3/allapps/AllAppsContainerView.java
 +++ b/src/com/android/launcher3/allapps/AllAppsContainerView.java
 @@ -72,12 +72,14 @@ import com.android.launcher3.keyboard.FocusedItemDecorator;
@@ -1606,7 +1745,7 @@ index a7c75ad..d70ed8f 100644
          }
          mHeaderTop = mHeader.getTop();
 diff --git a/src/com/android/launcher3/folder/Folder.java b/src/com/android/launcher3/folder/Folder.java
-index 7dccc62..eb5183b 100644
+index 7dccc62141..eb5183b8ff 100644
 --- a/src/com/android/launcher3/folder/Folder.java
 +++ b/src/com/android/launcher3/folder/Folder.java
 @@ -113,8 +113,10 @@ import java.util.StringJoiner;
@@ -1637,7 +1776,7 @@ index 7dccc62..eb5183b 100644
          if (Utilities.ATLEAST_R) {
              mKeyboardInsetAnimationCallback = new KeyboardInsetAnimationCallback(this);
 diff --git a/src/com/android/launcher3/folder/FolderIcon.java b/src/com/android/launcher3/folder/FolderIcon.java
-index d9f7bfa..3c129b9 100644
+index d9f7bfa3a6..3c129b9921 100644
 --- a/src/com/android/launcher3/folder/FolderIcon.java
 +++ b/src/com/android/launcher3/folder/FolderIcon.java
 @@ -37,6 +37,7 @@ import android.util.AttributeSet;
@@ -1662,7 +1801,7 @@ index d9f7bfa..3c129b9 100644
          icon.setTag(folderInfo);
          icon.setOnClickListener(ItemClickHandler.INSTANCE);
 diff --git a/src/com/android/launcher3/model/LoaderCursor.java b/src/com/android/launcher3/model/LoaderCursor.java
-index 93f824f..0d001b5 100644
+index 93f824fa6f..0d001b5196 100644
 --- a/src/com/android/launcher3/model/LoaderCursor.java
 +++ b/src/com/android/launcher3/model/LoaderCursor.java
 @@ -49,6 +49,9 @@ import com.android.launcher3.icons.BitmapInfo;
@@ -1703,7 +1842,7 @@ index 93f824f..0d001b5 100644
              return true;
          } else {
 diff --git a/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java b/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
-index f73d782..0d70e4e 100644
+index f73d782685..0d70e4e983 100644
 --- a/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
 +++ b/src/com/android/launcher3/pageindicators/WorkspacePageIndicator.java
 @@ -26,6 +26,9 @@ import com.android.launcher3.R;
@@ -1755,8 +1894,29 @@ index f73d782..0d70e4e 100644
          if (mTotalScroll == 0 || mNumPagesFloat == 0) {
              return;
          }
+diff --git a/src/com/android/launcher3/views/ClipIconView.java b/src/com/android/launcher3/views/ClipIconView.java
+index a66b3f942e..4418db17b7 100644
+--- a/src/com/android/launcher3/views/ClipIconView.java
++++ b/src/com/android/launcher3/views/ClipIconView.java
+@@ -135,12 +135,12 @@ public class ClipIconView extends View implements ClipPathView {
+ 
+         mFgSpringX = new SpringAnimation(this, mFgTransXProperty)
+                 .setSpring(new SpringForce()
+-                        .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY)
+-                        .setStiffness(SpringForce.STIFFNESS_LOW));
++                        .setDampingRatio(0.85f)
++                        .setStiffness(700f));
+         mFgSpringY = new SpringAnimation(this, mFgTransYProperty)
+                 .setSpring(new SpringForce()
+-                        .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY)
+-                        .setStiffness(SpringForce.STIFFNESS_LOW));
++                        .setDampingRatio(0.85f)
++                        .setStiffness(700f));
+     }
+ 
+     /**
 diff --git a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java b/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
-index d77d99d..846a6ad 100644
+index d77d99dfa3..846a6adbd9 100644
 --- a/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
 +++ b/src/com/android/launcher3/widget/LauncherAppWidgetProviderInfo.java
 @@ -17,6 +17,9 @@ import com.android.launcher3.DeviceProfile;
@@ -1786,7 +1946,7 @@ index d77d99d..846a6ad 100644
  
      /**
 diff --git a/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java b/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java
-index 4c2dec0..656c5d4 100644
+index 4c2dec0873..656c5d4394 100644
 --- a/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java
 +++ b/src/com/android/launcher3/widget/NavigableAppWidgetHostView.java
 @@ -243,13 +243,14 @@ public abstract class NavigableAppWidgetHostView extends AppWidgetHostView
